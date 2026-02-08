@@ -81,6 +81,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
             max-width: 250px;
+            transition: all 0.3s ease;
         }
         
         .filters h3 {
@@ -88,11 +89,29 @@
             font-size: 16px;
             font-weight: 600;
             color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .filters.collapsed {
+            padding: 10px;
+            max-width: 60px;
+        }
+        
+        .filters.collapsed h3 {
+            margin: 0;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        
+        .filters.collapsed .filter-buttons {
+            display: none;
         }
         
         .filter-button {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             width: 100%;
             padding: 10px 12px;
             margin: 6px 0;
@@ -115,14 +134,27 @@
             background: #f9fafb;
         }
         
+        .filter-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        
         .filter-dot {
             width: 14px;
             height: 14px;
             border-radius: 50%;
-            margin-right: 10px;
             border: 2px solid #fff;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
             flex-shrink: 0;
+        }
+        
+        .filter-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .dot-red { background-color: #ef4444; }
@@ -130,61 +162,29 @@
         .dot-green { background-color: #22c55e; }
         
         .filter-count {
-            margin-left: auto;
             font-weight: 600;
             color: #6b7280;
-            font-size: 12px;
+            font-size: 13px;
+            flex-shrink: 0;
+            margin-left: 8px;
         }
         
         .filter-button.active .filter-count {
             color: #30115e;
         }
         
-        /* Leyenda */
-        .legend {
-            background: white;
-            padding: 15px;
-            margin: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            font-size: 14px;
-            max-width: 200px;
-        }
-        
-        .legend h3 {
-            margin-bottom: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin: 8px 0;
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 10px;
-            border: 2px solid #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            flex-shrink: 0;
-        }
-        
-        .color-red { background-color: #ef4444; }
-        .color-orange { background-color: #f97316; }
-        .color-green { background-color: #22c55e; }
-        
         /* Estilos para mobile */
         @media (max-width: 768px) {
             .filters {
-                padding: 10px;
+                padding: 12px;
                 margin: 8px;
                 font-size: 12px;
-                max-width: 200px;
+                max-width: 220px;
+            }
+            
+            .filters.collapsed {
+                padding: 8px;
+                max-width: 50px;
             }
             
             .filters h3 {
@@ -201,48 +201,10 @@
             .filter-dot {
                 width: 12px;
                 height: 12px;
-                margin-right: 8px;
             }
             
-            .legend {
-                padding: 10px;
-                margin: 8px;
+            .filter-count {
                 font-size: 12px;
-                max-width: 160px;
-                transition: all 0.3s ease;
-            }
-            
-            .legend.collapsed {
-                padding: 8px;
-                max-width: 50px;
-            }
-            
-            .legend.collapsed .legend-content {
-                display: none;
-            }
-            
-            .legend h3 {
-                font-size: 14px;
-                margin-bottom: 8px;
-                cursor: pointer;
-                user-select: none;
-            }
-            
-            .legend.collapsed h3 {
-                margin: 0;
-                writing-mode: vertical-rl;
-                text-orientation: mixed;
-            }
-            
-            .legend-item {
-                margin: 6px 0;
-                font-size: 11px;
-            }
-            
-            .legend-color {
-                width: 16px;
-                height: 16px;
-                margin-right: 6px;
             }
         }
     </style>
@@ -264,31 +226,27 @@
         let map;
         let geocoder;
         let currentInfoWindow = null;
-        let markers = []; // Array para guardar todos los marcadores
+        let markers = [];
         const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec';
         
-        // Colores según estado
         const COLORS = {
             'Sin tratamiento': '#ef4444',
             'En proceso': '#f97316',
             'Resuelto': '#22c55e'
         };
         
-        // Estado de los filtros (todos activos al inicio)
         const filterState = {
             'Sin tratamiento': true,
             'En proceso': true,
             'Resuelto': true
         };
         
-        // Contadores por estado
         const stateCounts = {
             'Sin tratamiento': 0,
             'En proceso': 0,
             'Resuelto': 0
         };
         
-        // Inicializar el mapa
         function initMap() {
             const sanIsidro = { lat: -34.4707, lng: -58.5129 };
             
@@ -311,32 +269,48 @@
             });
             
             addFilters();
-            addLegend();
             loadReclamos();
         }
         
-        // Agregar filtros al mapa
         function addFilters() {
             const filtersDiv = document.createElement('div');
             filtersDiv.className = 'filters';
             filtersDiv.innerHTML = `
                 <h3>Filtrar por estado</h3>
-                <button class="filter-button active" data-estado="Sin tratamiento">
-                    <div class="filter-dot dot-red"></div>
-                    <span>Sin tratamiento</span>
-                    <span class="filter-count" id="count-sin">0</span>
-                </button>
-                <button class="filter-button active" data-estado="En proceso">
-                    <div class="filter-dot dot-orange"></div>
-                    <span>En proceso</span>
-                    <span class="filter-count" id="count-proceso">0</span>
-                </button>
-                <button class="filter-button active" data-estado="Resuelto">
-                    <div class="filter-dot dot-green"></div>
-                    <span>Resuelto</span>
-                    <span class="filter-count" id="count-resuelto">0</span>
-                </button>
+                <div class="filter-buttons">
+                    <button class="filter-button active" data-estado="Sin tratamiento">
+                        <div class="filter-left">
+                            <div class="filter-dot dot-red"></div>
+                            <span class="filter-text">Sin tratamiento</span>
+                        </div>
+                        <span class="filter-count" id="count-sin">0</span>
+                    </button>
+                    <button class="filter-button active" data-estado="En proceso">
+                        <div class="filter-left">
+                            <div class="filter-dot dot-orange"></div>
+                            <span class="filter-text">En proceso</span>
+                        </div>
+                        <span class="filter-count" id="count-proceso">0</span>
+                    </button>
+                    <button class="filter-button active" data-estado="Resuelto">
+                        <div class="filter-left">
+                            <div class="filter-dot dot-green"></div>
+                            <span class="filter-text">Resuelto</span>
+                        </div>
+                        <span class="filter-count" id="count-resuelto">0</span>
+                    </button>
+                </div>
             `;
+            
+            // Toggle para colapsar/expandir en mobile
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile) {
+                filtersDiv.classList.add('collapsed');
+            }
+            
+            filtersDiv.querySelector('h3').addEventListener('click', () => {
+                filtersDiv.classList.toggle('collapsed');
+            });
             
             // Event listeners para los botones
             const buttons = filtersDiv.querySelectorAll('.filter-button');
@@ -352,40 +326,6 @@
             map.controls[google.maps.ControlPosition.TOP_LEFT].push(filtersDiv);
         }
         
-        // Agregar leyenda al mapa
-        function addLegend() {
-            const legend = document.createElement('div');
-            legend.className = 'legend';
-            legend.innerHTML = `
-                <h3>Estado</h3>
-                <div class="legend-content">
-                    <div class="legend-item">
-                        <div class="legend-color color-red"></div>
-                        <span>Sin tratamiento</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color color-orange"></div>
-                        <span>En proceso</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color color-green"></div>
-                        <span>Resuelto</span>
-                    </div>
-                </div>
-            `;
-            
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                legend.classList.add('collapsed');
-                legend.querySelector('h3').addEventListener('click', () => {
-                    legend.classList.toggle('collapsed');
-                });
-            }
-            
-            map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
-        }
-        
-        // Actualizar visibilidad de marcadores según filtros
         function updateMarkers() {
             markers.forEach(markerObj => {
                 const shouldShow = filterState[markerObj.estado];
@@ -393,14 +333,12 @@
             });
         }
         
-        // Actualizar contadores en los filtros
         function updateCounters() {
             document.getElementById('count-sin').textContent = stateCounts['Sin tratamiento'];
             document.getElementById('count-proceso').textContent = stateCounts['En proceso'];
             document.getElementById('count-resuelto').textContent = stateCounts['Resuelto'];
         }
         
-        // Cargar reclamos desde Google Sheets
         async function loadReclamos() {
             try {
                 const response = await fetch(SHEET_URL);
@@ -416,14 +354,12 @@
                     return;
                 }
                 
-                // Contar estados
                 reclamos.forEach(reclamo => {
                     const estado = reclamo.estado || 'Sin tratamiento';
                     stateCounts[estado] = (stateCounts[estado] || 0) + 1;
                 });
                 updateCounters();
                 
-                // Geocodificar y agregar marcadores
                 let processed = 0;
                 for (const reclamo of reclamos) {
                     await geocodeAndAddMarker(reclamo);
@@ -443,7 +379,6 @@
             }
         }
         
-        // Geocodificar dirección y agregar marcador
         function geocodeAndAddMarker(reclamo) {
             return new Promise((resolve) => {
                 const direccionCompleta = reclamo.direccion;
@@ -468,7 +403,6 @@
                             }
                         });
                         
-                        // Guardar marcador con su estado
                         markers.push({
                             marker: marker,
                             estado: estado
