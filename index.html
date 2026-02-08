@@ -172,6 +172,56 @@
             color: #30115e;
         }
         
+        /* Estilos para el InfoWindow */
+        .infowindow-container {
+            max-width: 350px;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .infowindow-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px 8px 0 0;
+            margin-bottom: 12px;
+        }
+        
+        .infowindow-content {
+            padding: 12px;
+        }
+        
+        .infowindow-title {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .infowindow-field {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .infowindow-field strong {
+            color: #333;
+        }
+        
+        .infowindow-badge {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .marker-with-photo {
+            position: relative;
+        }
+        
         /* Estilos para mobile */
         @media (max-width: 768px) {
             .filters {
@@ -207,6 +257,14 @@
             
             .filter-count {
                 font-size: 12px;
+            }
+            
+            .infowindow-container {
+                max-width: 280px;
+            }
+            
+            .infowindow-image {
+                height: 160px;
             }
         }
     </style>
@@ -276,7 +334,7 @@
         
         function addFilters() {
             const filtersDiv = document.createElement('div');
-            filtersDiv.className = 'filters collapsed'; // Arranca colapsado
+            filtersDiv.className = 'filters collapsed';
             filtersDiv.innerHTML = `
                 <h3>Filtrar por estado</h3>
                 <div class="filter-buttons">
@@ -304,12 +362,10 @@
                 </div>
             `;
             
-            // Toggle para expandir/colapsar
             filtersDiv.querySelector('h3').addEventListener('click', () => {
                 filtersDiv.classList.toggle('collapsed');
             });
             
-            // Event listeners para los botones
             const buttons = filtersDiv.querySelectorAll('.filter-button');
             buttons.forEach(button => {
                 button.addEventListener('click', () => {
@@ -386,6 +442,24 @@
                         const estado = reclamo.estado || 'Sin tratamiento';
                         const color = COLORS[estado];
                         
+                        // Marcador con icono de cámara si tiene foto
+                        const markerIcon = reclamo.foto ? {
+                            path: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z',
+                            fillColor: color,
+                            fillOpacity: 0.9,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 2,
+                            scale: 1.5,
+                            anchor: new google.maps.Point(12, 12)
+                        } : {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 10,
+                            fillColor: color,
+                            fillOpacity: 0.9,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 2
+                        };
+                        
                         const marker = new google.maps.Marker({
                             position: location,
                             map: map,
@@ -405,35 +479,25 @@
                             estado: estado
                         });
                         
+                        // Construir HTML del InfoWindow
+                        let infoContent = '<div class="infowindow-container">';
+                        
+                        // Si tiene foto, mostrarla arriba
+                        if (reclamo.foto) {
+                            infoContent += `<img src="${reclamo.foto}" class="infowindow-image" alt="Foto del reclamo" onerror="this.style.display='none'">`;
+                        }
+                        
+                        infoContent += '<div class="infowindow-content">';
+                        infoContent += `<h3 class="infowindow-title">${reclamo.tema || 'Sin título'}</h3>`;
+                        infoContent += `<p class="infowindow-field"><strong>Reportado por:</strong> ${reclamo.nombre || 'Anónimo'}</p>`;
+                        infoContent += `<p class="infowindow-field"><strong>Dirección:</strong> ${reclamo.direccion}</p>`;
+                        infoContent += `<p class="infowindow-field"><strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}</p>`;
+                        infoContent += `<span class="infowindow-badge" style="background: ${color};">${estado}</span>`;
+                        infoContent += '</div></div>';
+                        
                         const infoWindow = new google.maps.InfoWindow({
-                            content: `
-                                <div style="max-width: 300px; padding: 10px;">
-                                    <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px;">
-                                        ${reclamo.tema || 'Sin título'}
-                                    </h3>
-                                    <p style="margin: 5px 0; font-size: 14px;">
-                                        <strong>Reportado por:</strong> ${reclamo.nombre || 'Anónimo'}
-                                    </p>
-                                    <p style="margin: 5px 0; font-size: 14px;">
-                                        <strong>Dirección:</strong> ${reclamo.direccion}
-                                    </p>
-                                    <p style="margin: 5px 0; font-size: 14px;">
-                                        <strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}
-                                    </p>
-                                    <p style="margin: 10px 0 0 0;">
-                                        <span style="
-                                            background: ${color};
-                                            color: white;
-                                            padding: 5px 10px;
-                                            border-radius: 5px;
-                                            font-size: 12px;
-                                            font-weight: bold;
-                                        ">
-                                            ${estado}
-                                        </span>
-                                    </p>
-                                </div>
-                            `
+                            content: infoContent,
+                            maxWidth: 350
                         });
                         
                         marker.addListener('click', () => {
