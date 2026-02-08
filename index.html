@@ -73,6 +73,74 @@
             100% { transform: rotate(360deg); }
         }
         
+        /* Filtros */
+        .filters {
+            background: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 250px;
+        }
+        
+        .filters h3 {
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .filter-button {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 10px 12px;
+            margin: 6px 0;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .filter-button:hover {
+            border-color: #9ca3af;
+        }
+        
+        .filter-button.active {
+            border-color: #30115e;
+            background: #f9fafb;
+        }
+        
+        .filter-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            flex-shrink: 0;
+        }
+        
+        .dot-red { background-color: #ef4444; }
+        .dot-orange { background-color: #f97316; }
+        .dot-green { background-color: #22c55e; }
+        
+        .filter-count {
+            margin-left: auto;
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 12px;
+        }
+        
+        .filter-button.active .filter-count {
+            color: #30115e;
+        }
+        
+        /* Leyenda */
         .legend {
             background: white;
             padding: 15px;
@@ -112,6 +180,30 @@
         
         /* Estilos para mobile */
         @media (max-width: 768px) {
+            .filters {
+                padding: 10px;
+                margin: 8px;
+                font-size: 12px;
+                max-width: 200px;
+            }
+            
+            .filters h3 {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            
+            .filter-button {
+                padding: 8px 10px;
+                font-size: 12px;
+                margin: 5px 0;
+            }
+            
+            .filter-dot {
+                width: 12px;
+                height: 12px;
+                margin-right: 8px;
+            }
+            
             .legend {
                 padding: 10px;
                 margin: 8px;
@@ -171,19 +263,33 @@
     <script>
         let map;
         let geocoder;
-        let currentInfoWindow = null; // Variable para rastrear el InfoWindow abierto
+        let currentInfoWindow = null;
+        let markers = []; // Array para guardar todos los marcadores
         const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec';
         
         // Colores según estado
         const COLORS = {
-            'Sin tratamiento': '#ef4444',      // Rojo
-            'En proceso': '#f97316',           // Naranja
-            'Resuelto': '#22c55e'              // Verde
+            'Sin tratamiento': '#ef4444',
+            'En proceso': '#f97316',
+            'Resuelto': '#22c55e'
+        };
+        
+        // Estado de los filtros (todos activos al inicio)
+        const filterState = {
+            'Sin tratamiento': true,
+            'En proceso': true,
+            'Resuelto': true
+        };
+        
+        // Contadores por estado
+        const stateCounts = {
+            'Sin tratamiento': 0,
+            'En proceso': 0,
+            'Resuelto': 0
         };
         
         // Inicializar el mapa
         function initMap() {
-            // Centrar en San Isidro, Buenos Aires
             const sanIsidro = { lat: -34.4707, lng: -58.5129 };
             
             map = new google.maps.Map(document.getElementById('map'), {
@@ -197,7 +303,6 @@
             
             geocoder = new google.maps.Geocoder();
             
-            // Cerrar InfoWindow cuando se hace click en el mapa
             map.addListener('click', () => {
                 if (currentInfoWindow) {
                     currentInfoWindow.close();
@@ -205,11 +310,46 @@
                 }
             });
             
-            // Agregar leyenda
+            addFilters();
             addLegend();
-            
-            // Cargar reclamos
             loadReclamos();
+        }
+        
+        // Agregar filtros al mapa
+        function addFilters() {
+            const filtersDiv = document.createElement('div');
+            filtersDiv.className = 'filters';
+            filtersDiv.innerHTML = `
+                <h3>Filtrar por estado</h3>
+                <button class="filter-button active" data-estado="Sin tratamiento">
+                    <div class="filter-dot dot-red"></div>
+                    <span>Sin tratamiento</span>
+                    <span class="filter-count" id="count-sin">0</span>
+                </button>
+                <button class="filter-button active" data-estado="En proceso">
+                    <div class="filter-dot dot-orange"></div>
+                    <span>En proceso</span>
+                    <span class="filter-count" id="count-proceso">0</span>
+                </button>
+                <button class="filter-button active" data-estado="Resuelto">
+                    <div class="filter-dot dot-green"></div>
+                    <span>Resuelto</span>
+                    <span class="filter-count" id="count-resuelto">0</span>
+                </button>
+            `;
+            
+            // Event listeners para los botones
+            const buttons = filtersDiv.querySelectorAll('.filter-button');
+            buttons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const estado = button.dataset.estado;
+                    filterState[estado] = !filterState[estado];
+                    button.classList.toggle('active');
+                    updateMarkers();
+                });
+            });
+            
+            map.controls[google.maps.ControlPosition.TOP_LEFT].push(filtersDiv);
         }
         
         // Agregar leyenda al mapa
@@ -234,7 +374,6 @@
                 </div>
             `;
             
-            // Funcionalidad de colapsar en mobile
             const isMobile = window.innerWidth <= 768;
             if (isMobile) {
                 legend.classList.add('collapsed');
@@ -244,6 +383,21 @@
             }
             
             map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);
+        }
+        
+        // Actualizar visibilidad de marcadores según filtros
+        function updateMarkers() {
+            markers.forEach(markerObj => {
+                const shouldShow = filterState[markerObj.estado];
+                markerObj.marker.setVisible(shouldShow);
+            });
+        }
+        
+        // Actualizar contadores en los filtros
+        function updateCounters() {
+            document.getElementById('count-sin').textContent = stateCounts['Sin tratamiento'];
+            document.getElementById('count-proceso').textContent = stateCounts['En proceso'];
+            document.getElementById('count-resuelto').textContent = stateCounts['Resuelto'];
         }
         
         // Cargar reclamos desde Google Sheets
@@ -262,20 +416,25 @@
                     return;
                 }
                 
+                // Contar estados
+                reclamos.forEach(reclamo => {
+                    const estado = reclamo.estado || 'Sin tratamiento';
+                    stateCounts[estado] = (stateCounts[estado] || 0) + 1;
+                });
+                updateCounters();
+                
                 // Geocodificar y agregar marcadores
                 let processed = 0;
                 for (const reclamo of reclamos) {
                     await geocodeAndAddMarker(reclamo);
                     processed++;
                     
-                    // Actualizar loading
                     document.getElementById('loading').innerHTML = `
                         <div class="spinner"></div>
                         <p>Procesando reclamos... ${processed}/${reclamos.length}</p>
                     `;
                 }
                 
-                // Ocultar loading
                 document.getElementById('loading').style.display = 'none';
                 
             } catch (error) {
@@ -287,15 +446,13 @@
         // Geocodificar dirección y agregar marcador
         function geocodeAndAddMarker(reclamo) {
             return new Promise((resolve) => {
-                // La dirección ya viene completa del script, no agregamos nada más
                 const direccionCompleta = reclamo.direccion;
                 
                 geocoder.geocode({ address: direccionCompleta }, (results, status) => {
                     if (status === 'OK') {
                         const location = results[0].geometry.location;
-                        
-                        // Crear marcador personalizado con SVG
-                        const color = COLORS[reclamo.estado] || COLORS['Sin tratamiento'];
+                        const estado = reclamo.estado || 'Sin tratamiento';
+                        const color = COLORS[estado];
                         
                         const marker = new google.maps.Marker({
                             position: location,
@@ -311,7 +468,12 @@
                             }
                         });
                         
-                        // InfoWindow con información del reclamo
+                        // Guardar marcador con su estado
+                        markers.push({
+                            marker: marker,
+                            estado: estado
+                        });
+                        
                         const infoWindow = new google.maps.InfoWindow({
                             content: `
                                 <div style="max-width: 300px; padding: 10px;">
@@ -336,20 +498,17 @@
                                             font-size: 12px;
                                             font-weight: bold;
                                         ">
-                                            ${reclamo.estado}
+                                            ${estado}
                                         </span>
                                     </p>
                                 </div>
                             `
                         });
                         
-                        // Abrir InfoWindow al hacer click
                         marker.addListener('click', () => {
-                            // Cerrar InfoWindow anterior si existe
                             if (currentInfoWindow) {
                                 currentInfoWindow.close();
                             }
-                            // Abrir nuevo InfoWindow y guardar referencia
                             infoWindow.open(map, marker);
                             currentInfoWindow = infoWindow;
                         });
@@ -363,7 +522,6 @@
         }
     </script>
     
-    <!-- Cargar Google Maps API -->
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAScgyJY28HxUI0kIlX3j3yzpWOQslh_h4&callback=initMap">
     </script>
