@@ -346,14 +346,6 @@
             
             geocoder = new google.maps.Geocoder();
             
-            // Cerrar InfoWindow cuando se hace click en el mapa
-            google.maps.event.addListener(map, 'click', function() {
-                if (currentInfoWindow) {
-                    currentInfoWindow.close();
-                    currentInfoWindow = null;
-                }
-            });
-            
             addFilters();
             loadReclamos();
         }
@@ -406,7 +398,7 @@
                 });
             });
             
-            // Desktop: arriba izquierda, Mobile: abajo derecha
+            // MOBILE: abajo derecha, DESKTOP: arriba izquierda
             const position = isMobile 
                 ? google.maps.ControlPosition.RIGHT_BOTTOM 
                 : google.maps.ControlPosition.TOP_LEFT;
@@ -518,12 +510,21 @@
                             disableAutoPan: false
                         });
                         
-                        google.maps.event.addListener(marker, 'click', function() {
+                        // Listener en el marcador
+                        marker.addListener('click', function() {
                             if (currentInfoWindow) {
                                 currentInfoWindow.close();
                             }
                             infoWindow.open(map, marker);
                             currentInfoWindow = infoWindow;
+                        });
+                        
+                        // Listener en el mapa para cerrar el InfoWindow
+                        google.maps.event.addListener(map, 'click', function() {
+                            if (currentInfoWindow) {
+                                currentInfoWindow.close();
+                                currentInfoWindow = null;
+                            }
                         });
                         
                     } else {
