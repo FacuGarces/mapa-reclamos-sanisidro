@@ -94,14 +94,13 @@
         }
         
         .filters.collapsed {
-            padding: 10px;
-            max-width: 60px;
+            padding: 10px 15px;
+            max-width: fit-content;
         }
         
         .filters.collapsed h3 {
             margin: 0;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
+            font-size: 14px;
         }
         
         .filters.collapsed .filter-buttons {
@@ -183,13 +182,16 @@
             }
             
             .filters.collapsed {
-                padding: 8px;
-                max-width: 50px;
+                padding: 8px 12px;
             }
             
             .filters h3 {
                 font-size: 14px;
                 margin-bottom: 10px;
+            }
+            
+            .filters.collapsed h3 {
+                font-size: 12px;
             }
             
             .filter-button {
@@ -274,7 +276,7 @@
         
         function addFilters() {
             const filtersDiv = document.createElement('div');
-            filtersDiv.className = 'filters';
+            filtersDiv.className = 'filters collapsed'; // Arranca colapsado
             filtersDiv.innerHTML = `
                 <h3>Filtrar por estado</h3>
                 <div class="filter-buttons">
@@ -302,12 +304,7 @@
                 </div>
             `;
             
-            // Toggle para colapsar/expandir en mobile
-            const isMobile = window.innerWidth <= 768;
-            if (isMobile) {
-                filtersDiv.classList.add('collapsed');
-            }
-            
+            // Toggle para expandir/colapsar
             filtersDiv.querySelector('h3').addEventListener('click', () => {
                 filtersDiv.classList.toggle('collapsed');
             });
