@@ -353,8 +353,10 @@
         function addFilters() {
             const filtersDiv = document.createElement('div');
             
-            // En mobile arranca colapsado, en desktop expandido
+            // Detectar si es mobile
             const isMobile = window.innerWidth <= 768;
+            
+            // En mobile arranca colapsado, en desktop expandido
             filtersDiv.className = isMobile ? 'filters collapsed' : 'filters';
             
             filtersDiv.innerHTML = `
@@ -398,12 +400,12 @@
                 });
             });
             
-            // MOBILE: abajo derecha, DESKTOP: arriba izquierda
-            const position = isMobile 
-                ? google.maps.ControlPosition.RIGHT_BOTTOM 
-                : google.maps.ControlPosition.TOP_LEFT;
-            
-            map.controls[position].push(filtersDiv);
+            // Posición condicional: MOBILE = RIGHT_BOTTOM, DESKTOP = TOP_LEFT
+            if (isMobile) {
+                map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(filtersDiv);
+            } else {
+                map.controls[google.maps.ControlPosition.TOP_LEFT].push(filtersDiv);
+            }
         }
         
         function updateMarkers() {
@@ -510,21 +512,12 @@
                             disableAutoPan: false
                         });
                         
-                        // Listener en el marcador
-                        marker.addListener('click', function() {
+                        marker.addListener('click', () => {
                             if (currentInfoWindow) {
                                 currentInfoWindow.close();
                             }
                             infoWindow.open(map, marker);
                             currentInfoWindow = infoWindow;
-                        });
-                        
-                        // Listener en el mapa para cerrar el InfoWindow
-                        google.maps.event.addListener(map, 'click', function() {
-                            if (currentInfoWindow) {
-                                currentInfoWindow.close();
-                                currentInfoWindow = null;
-                            }
                         });
                         
                     } else {
