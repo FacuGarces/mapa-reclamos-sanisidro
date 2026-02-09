@@ -434,22 +434,53 @@
         }
         
         // Función para calcular tiempo relativo
-        function getRelativeTime(fechaString) {
-            if (!fechaString) return null;
+function getRelativeTime(fechaString) {
+    if (!fechaString) return null;
+    
+    try {
+        // Intentar parsear la fecha
+        let fecha;
+        
+        // Si viene en formato de Google Sheets (puede ser varios formatos)
+        if (fechaString.includes('/')) {
+            // Formato DD/MM/YYYY HH:MM:SS
+            const partes = fechaString.split(' ');
+            const fechaParte = partes[0].split('/');
+            const horaParte = partes[1] ? partes[1] : '00:00:00';
             
-            const fecha = new Date(fechaString);
-            const ahora = new Date();
-            const diferenciaDias = Math.floor((ahora - fecha) / (1000 * 60 * 60 * 24));
+            // Crear fecha en formato ISO
+            const dia = fechaParte[0].padStart(2, '0');
+            const mes = fechaParte[1].padStart(2, '0');
+            const anio = fechaParte[2];
             
-            if (diferenciaDias < 7) {
-                if (diferenciaDias === 0) return 'Hoy';
-                if (diferenciaDias === 1) return 'Ayer';
-                return `Hace ${diferenciaDias} días`;
-            } else {
-                const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                return `${fecha.getDate()} ${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
-            }
+            fecha = new Date(`${anio}-${mes}-${dia}T${horaParte}`);
+        } else {
+            // Intentar parseo directo
+            fecha = new Date(fechaString);
         }
+        
+        // Validar que la fecha sea válida
+        if (isNaN(fecha.getTime())) {
+            console.error('Fecha inválida:', fechaString);
+            return null;
+        }
+        
+        const ahora = new Date();
+        const diferenciaDias = Math.floor((ahora - fecha) / (1000 * 60 * 60 * 24));
+        
+        if (diferenciaDias < 7) {
+            if (diferenciaDias === 0) return 'Hoy';
+            if (diferenciaDias === 1) return 'Ayer';
+            return `Hace ${diferenciaDias} días`;
+        } else {
+            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            return `${fecha.getDate()} ${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
+        }
+    } catch (error) {
+        console.error('Error procesando fecha:', fechaString, error);
+        return null;
+    }
+}
         
         async function loadReclamos() {
             try {
