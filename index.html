@@ -217,6 +217,13 @@
             font-weight: 600;
         }
         
+        .infowindow-date {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+        }
+        
         .infowindow-field {
             margin: 5px 0;
             font-size: 14px;
@@ -353,7 +360,6 @@
         function addFilters() {
             const filtersDiv = document.createElement('div');
             
-            // SIEMPRE arranca colapsado
             filtersDiv.className = 'filters collapsed';
             
             filtersDiv.innerHTML = `
@@ -397,15 +403,12 @@
                 });
             });
             
-            // Función para actualizar posición según tamaño de pantalla
             function updateFilterPosition() {
                 const currentMobile = window.innerWidth <= 768;
                 
-                // Remover de todas las posiciones
                 map.controls[google.maps.ControlPosition.TOP_LEFT].clear();
                 map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].clear();
                 
-                // Agregar en la posición correcta
                 if (currentMobile) {
                     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(filtersDiv);
                 } else {
@@ -413,10 +416,7 @@
                 }
             }
             
-            // Posición inicial
             updateFilterPosition();
-            
-            // Listener de resize
             window.addEventListener('resize', updateFilterPosition);
         }
         
@@ -431,6 +431,24 @@
             document.getElementById('count-sin').textContent = stateCounts['Sin tratamiento'];
             document.getElementById('count-proceso').textContent = stateCounts['En proceso'];
             document.getElementById('count-resuelto').textContent = stateCounts['Resuelto'];
+        }
+        
+        // Función para calcular tiempo relativo
+        function getRelativeTime(fechaString) {
+            if (!fechaString) return null;
+            
+            const fecha = new Date(fechaString);
+            const ahora = new Date();
+            const diferenciaDias = Math.floor((ahora - fecha) / (1000 * 60 * 60 * 24));
+            
+            if (diferenciaDias < 7) {
+                if (diferenciaDias === 0) return 'Hoy';
+                if (diferenciaDias === 1) return 'Ayer';
+                return `Hace ${diferenciaDias} días`;
+            } else {
+                const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                return `${fecha.getDate()} ${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
+            }
         }
         
         async function loadReclamos() {
@@ -479,7 +497,7 @@
                 
                 geocoder.geocode({ address: direccionCompleta }, (results, status) => {
                     if (status === 'OK') {
-                        const location = results[0].geometry.location;  // SIN paréntesis
+                        const location = results[0].geometry.location;
                         const estado = reclamo.estado || 'Sin tratamiento';
                         const color = COLORS[estado];
                         
@@ -512,6 +530,15 @@
                         
                         infoContent += '<div class="infowindow-content">';
                         infoContent += `<h3 class="infowindow-title">${reclamo.tema || 'Sin título'}</h3>`;
+                        
+                        // Agregar fecha
+                        if (reclamo.fecha) {
+                            const fechaFormateada = getRelativeTime(reclamo.fecha);
+                            if (fechaFormateada) {
+                                infoContent += `<p class="infowindow-date">${fechaFormateada}</p>`;
+                            }
+                        }
+                        
                         infoContent += `<p class="infowindow-field"><strong>Reportado por:</strong> ${reclamo.nombre || 'Anónimo'}</p>`;
                         infoContent += `<p class="infowindow-field"><strong>Dirección:</strong> ${reclamo.direccion}</p>`;
                         infoContent += `<p class="infowindow-field"><strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}</p>`;
