@@ -257,13 +257,13 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            transition: transform 0.2s ease;
+            transition: all 0.2s ease;
             z-index: 10;
         }
         
         .infowindow-share-btn:hover {
             transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         
         .infowindow-share-btn svg {
@@ -617,14 +617,14 @@
                             estado: estado
                         });
                         
-                        // Construir mensaje para WhatsApp
+                        // Construir mensaje para WhatsApp (sin emojis)
                         const lat = location.lat();
                         const lng = location.lng();
                         const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
                         const whatsappMessage = `*Reclamo: ${reclamo.tema || 'Sin título'}*%0A%0A` +
-                            `📍 *Dirección:* ${reclamo.direccion}%0A` +
-                            `📝 *Descripción:* ${reclamo.descripcion || 'Sin descripción'}%0A` +
-                            `🚦 *Estado:* ${estado}%0A%0A` +
+                            `*Dirección:* ${reclamo.direccion}%0A` +
+                            `*Descripción:* ${reclamo.descripcion || 'Sin descripción'}%0A` +
+                            `*Estado:* ${estado}%0A%0A` +
                             `Ver en mapa: ${mapsLink}`;
                         
                         const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
