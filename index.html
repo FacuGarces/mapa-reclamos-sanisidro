@@ -340,22 +340,30 @@
         };
         
         function initMap() {
-            const sanIsidro = { lat: -34.4707, lng: -58.5129 };
-            
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 13,
-                center: sanIsidro,
-                mapTypeControl: true,
-                streetViewControl: true,
-                fullscreenControl: true,
-                zoomControl: true
-            });
-            
-            geocoder = new google.maps.Geocoder();
-            
-            addFilters();
-            loadReclamos();
+    const sanIsidro = { lat: -34.4707, lng: -58.5129 };
+    
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 13,
+        center: sanIsidro,
+        mapTypeControl: true,
+        streetViewControl: true,
+        fullscreenControl: true,
+        zoomControl: true
+    });
+    
+    geocoder = new google.maps.Geocoder();
+    
+    // Cerrar InfoWindow al hacer click en el mapa
+    map.addListener('click', function() {
+        if (currentInfoWindow) {
+            currentInfoWindow.close();
+            currentInfoWindow = null;
         }
+    });
+    
+    addFilters();
+    loadReclamos();
+}
         
         function addFilters() {
             const filtersDiv = document.createElement('div');
