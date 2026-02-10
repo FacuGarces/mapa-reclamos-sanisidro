@@ -221,6 +221,25 @@
             fill: white;
         }
         
+        /* En desktop mantener hover */
+        @media (min-width: 769px) {
+            .center-map-btn:hover {
+                background: #30115e;
+            }
+            
+            .center-map-btn:hover svg {
+                fill: white;
+            }
+            
+            .center-map-btn:active {
+                background: #30115e;
+            }
+            
+            .center-map-btn:active svg {
+                fill: white;
+            }
+        }
+        
         /* Ocultar el botón de cerrar del InfoWindow */
         .gm-style-iw-chr {
             display: none !important;
@@ -431,12 +450,30 @@
             .center-map-btn {
                 width: 40px;
                 height: 40px;
-                margin: 8px;
+                margin: 10px 10px 10px 8px;
             }
             
             .center-map-btn svg {
                 width: 20px;
                 height: 20px;
+            }
+            
+            /* Desactivar hover en mobile */
+            .center-map-btn:hover {
+                background: white;
+            }
+            
+            .center-map-btn:hover svg {
+                fill: #30115e;
+            }
+            
+            /* Efecto solo durante el tap */
+            .center-map-btn:active {
+                background: #30115e;
+            }
+            
+            .center-map-btn:active svg {
+                fill: white;
             }
             
             .infowindow-container {
@@ -619,7 +656,19 @@
             `;
             centerBtn.title = 'Ver todos los reclamos';
             
-            centerBtn.addEventListener('click', centerMapOnMarkers);
+            centerBtn.addEventListener('click', () => {
+                // Feedback visual en mobile
+                centerBtn.style.background = '#30115e';
+                centerBtn.querySelector('svg').style.fill = 'white';
+                
+                centerMapOnMarkers();
+                
+                // Volver al estado original después de 150ms
+                setTimeout(() => {
+                    centerBtn.style.background = 'white';
+                    centerBtn.querySelector('svg').style.fill = '#30115e';
+                }, 150);
+            });
             
             return centerBtn;
         }
