@@ -238,6 +238,148 @@
             fill: white;
         }
         
+        /* Barra de búsqueda */
+        .search-container {
+            background: white;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 300px;
+        }
+        
+        .search-icon {
+            width: 20px;
+            height: 20px;
+            fill: #30115e;
+            flex-shrink: 0;
+        }
+        
+        .search-input {
+            border: none;
+            outline: none;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            color: #333;
+        }
+        
+        .search-input::placeholder {
+            color: #9ca3af;
+        }
+        
+        /* Botón de lupa en mobile */
+        .search-button-mobile {
+            background: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            margin: 10px;
+            border: none;
+        }
+        
+        .search-button-mobile svg {
+            width: 20px;
+            height: 20px;
+            fill: #30115e;
+        }
+        
+        /* Modal de búsqueda mobile */
+        .search-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 100px;
+        }
+        
+        .search-modal.active {
+            display: flex;
+        }
+        
+        .search-modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .search-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .search-modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .search-modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .search-modal-input-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid #30115e;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .search-modal-input {
+            border: none;
+            outline: none;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+            width: 100%;
+            color: #333;
+        }
+        
+        .search-modal-button {
+            background: #30115e;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
         /* Ocultar el botón de cerrar del InfoWindow */
         .gm-style-iw-chr {
             display: none !important;
@@ -393,6 +535,15 @@
         
         /* Estilos para mobile */
         @media (max-width: 768px) {
+            /* Ocultar barra completa en mobile */
+            .search-container {
+                display: none;
+            }
+            
+            /* Mostrar botón de lupa en mobile */
+            .search-button-mobile {
+                display: flex;
+            }
             #total-counter {
                 font-size: 14px;
                 padding: 10px;
@@ -500,6 +651,23 @@
         <div class="progress-text" id="progress-text">0%</div>
     </div>
     
+    <!-- Modal de búsqueda para mobile -->
+    <div class="search-modal" id="search-modal">
+        <div class="search-modal-content">
+            <div class="search-modal-header">
+                <h3 class="search-modal-title">Buscar dirección</h3>
+                <button class="search-modal-close" id="close-search-modal">×</button>
+            </div>
+            <div class="search-modal-input-container">
+                <svg class="search-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <input type="text" class="search-modal-input" id="search-input-mobile" placeholder="Ej: Av. Libertador 16500">
+                <button class="search-modal-button" id="search-button-modal">Buscar</button>
+            </div>
+        </div>
+    </div>
+    
     <div id="map"></div>
 
     <script>
@@ -550,6 +718,7 @@
             });
             
             addFilters();
+            setupSearchModal();
             loadReclamos();
         }
         
@@ -604,23 +773,27 @@
             });
             
             const centerBtn = addCenterMapButton();
+            const { searchContainer, searchButtonMobile } = addSearchControls();
             
             function updateControlsPosition() {
                 const currentMobile = window.innerWidth <= 768;
                 
                 map.controls[google.maps.ControlPosition.TOP_LEFT].clear();
                 map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].clear();
+                map.controls[google.maps.ControlPosition.LEFT_BOTTOM].clear();
                 
                 // Contador siempre arriba a la izquierda
                 map.controls[google.maps.ControlPosition.TOP_LEFT].push(totalCounterDiv);
                 
                 if (currentMobile) {
-                    // En mobile, botón y filtro abajo a la derecha (botón primero para que quede abajo)
+                    // En mobile: botón centrar y filtro abajo a la derecha, lupa abajo a la izquierda
                     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
                     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(filtersDiv);
+                    map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(searchButtonMobile);
                 } else {
-                    // En desktop, filtro arriba a la izquierda, botón abajo a la derecha
+                    // En desktop: filtro y búsqueda arriba a la izquierda, botón centrar abajo a la derecha
                     map.controls[google.maps.ControlPosition.TOP_LEFT].push(filtersDiv);
+                    map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchContainer);
                     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
                 }
             }
@@ -658,6 +831,115 @@
             });
             
             return centerBtn;
+        }
+        
+        function addSearchControls() {
+            // Barra de búsqueda para desktop
+            const searchContainer = document.createElement('div');
+            searchContainer.className = 'search-container';
+            searchContainer.innerHTML = `
+                <svg class="search-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+                <input type="text" class="search-input" id="search-input-desktop" placeholder="Buscar dirección...">
+            `;
+            
+            // Botón de lupa para mobile
+            const searchButtonMobile = document.createElement('div');
+            searchButtonMobile.className = 'search-button-mobile';
+            searchButtonMobile.innerHTML = `
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            `;
+            
+            // Event listeners para búsqueda en desktop
+            const searchInputDesktop = searchContainer.querySelector('#search-input-desktop');
+            searchInputDesktop.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch(searchInputDesktop.value);
+                }
+            });
+            
+            // Event listener para abrir modal en mobile
+            searchButtonMobile.addEventListener('click', () => {
+                document.getElementById('search-modal').classList.add('active');
+                document.getElementById('search-input-mobile').focus();
+            });
+            
+            return { searchContainer, searchButtonMobile };
+        }
+        
+        function setupSearchModal() {
+            // Cerrar modal
+            document.getElementById('close-search-modal').addEventListener('click', () => {
+                document.getElementById('search-modal').classList.remove('active');
+            });
+            
+            // Cerrar al hacer click fuera
+            document.getElementById('search-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'search-modal') {
+                    document.getElementById('search-modal').classList.remove('active');
+                }
+            });
+            
+            // Búsqueda en mobile
+            document.getElementById('search-button-modal').addEventListener('click', () => {
+                const query = document.getElementById('search-input-mobile').value;
+                performSearch(query);
+                document.getElementById('search-modal').classList.remove('active');
+            });
+            
+            document.getElementById('search-input-mobile').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const query = document.getElementById('search-input-mobile').value;
+                    performSearch(query);
+                    document.getElementById('search-modal').classList.remove('active');
+                }
+            });
+        }
+        
+        function performSearch(query) {
+            if (!query.trim()) {
+                alert('Por favor ingresa una dirección');
+                return;
+            }
+            
+            // Agregar "San Isidro, Buenos Aires, Argentina" si no está incluido
+            let searchQuery = query;
+            if (!query.toLowerCase().includes('san isidro') && !query.toLowerCase().includes('buenos aires')) {
+                searchQuery = `${query}, San Isidro, Buenos Aires, Argentina`;
+            }
+            
+            geocoder.geocode({ address: searchQuery }, (results, status) => {
+                if (status === 'OK') {
+                    const location = results[0].geometry.location;
+                    map.setCenter(location);
+                    map.setZoom(16);
+                    
+                    // Crear marcador temporal en la ubicación buscada
+                    const tempMarker = new google.maps.Marker({
+                        position: location,
+                        map: map,
+                        animation: google.maps.Animation.DROP,
+                        icon: {
+                            path: google.maps.SymbolPath.CIRCLE,
+                            scale: 8,
+                            fillColor: '#667eea',
+                            fillOpacity: 0.8,
+                            strokeColor: '#ffffff',
+                            strokeWeight: 2
+                        }
+                    });
+                    
+                    // Eliminar el marcador temporal después de 3 segundos
+                    setTimeout(() => {
+                        tempMarker.setMap(null);
+                    }, 3000);
+                } else {
+                    alert('No se pudo encontrar la dirección. Intenta con otra dirección.');
+                }
+            });
         }
         
         function centerMapOnMarkers() {
