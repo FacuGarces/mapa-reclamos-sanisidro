@@ -1820,65 +1820,79 @@ _La Libertad Avanza - San Isidro_`;
         
         let autoRefreshInterval = null;
         let lastDataHash = null;
-        const AUTO_REFRESH_INTERVAL = 15000; // 15 segundos
+        const AUTO_REFRESH_INTERVAL = 5000; // 5 segundos - casi instantáneo
         
         // Función para calcular un hash simple de los datos
         function getDataHash(data) {
-            // Hash basado en cantidad y contenido relevante
-            return JSON.stringify(data.map(r => ({
-                id: r.id,
-                estado: r.estado,
-                numeroReclamo: r.numeroReclamo,
-                tema: r.tema,
-                descripcion: r.descripcion
-            })));
+            // Hash simple: cantidad de reclamos + suma de IDs + estados
+            return data.length + '_' + data.map(r => `${r.id}-${r.estado}-${r.numeroReclamo}`).join('|');
         }
         
-        // Función para actualizar el mapa con nuevos datos
+        // Función para actualizar el mapa con nuevos datos SIN re-geocodificar
         async function checkForUpdates() {
             try {
                 const response = await fetch('https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec');
-                const data = await response.json();
+                const newData = await response.json();
                 
-                const newHash = getDataHash(data);
+                const newHash = getDataHash(newData);
                 
                 // Solo actualizar si hay cambios
                 if (lastDataHash !== null && newHash !== lastDataHash) {
                     console.log('🔄 Cambios detectados, actualizando mapa...');
                     
-                    // Guardar el estado actual del mapa (centro y zoom)
+                    // Actualizar reclamosData con los nuevos datos (sin re-geocodificar)
+                    reclamosData.forEach(item => {
+                        const updated = newData.find(r => r.id === item.id);
+                        if (updated) {
+                            // Actualizar solo los datos que pueden cambiar
+                            item.estado = updated.estado || 'Sin tratamiento';
+                            item.numeroReclamo = updated.numeroReclamo || '';
+                            item.mensajeEnviado = updated.mensajeEnviado || '';
+                            item.tema = updated.tema || '';
+                            item.descripcion = updated.descripcion || '';
+                        }
+                    });
+                    
+                    // Verificar si hay nuevos reclamos (que SÍ necesitan geocoding)
+                    const existingIds = reclamosData.map(r => r.id);
+                    const newReclamos = newData.filter(r => !existingIds.includes(r.id));
+                    
+                    if (newReclamos.length > 0) {
+                        console.log(`📍 ${newReclamos.length} reclamo(s) nuevo(s), geocodificando...`);
+                        
+                        // Geocodificar solo los nuevos
+                        for (const reclamo of newReclamos) {
+                            await geocodeReclamo(reclamo);
+                        }
+                    }
+                    
+                    // Guardar centro y zoom actuales
                     const currentCenter = map.getCenter();
                     const currentZoom = map.getZoom();
                     
-                    // Limpiar marcadores existentes
+                    // Limpiar TODOS los marcadores
                     markers.forEach(marker => marker.setMap(null));
                     markers = [];
-                    reclamosData = [];
                     
-                    // Cerrar InfoWindow si está abierto
+                    // Cerrar InfoWindow
                     if (currentInfoWindow) {
                         currentInfoWindow.close();
                     }
                     
-                    // Resetear contadores
+                    // Recalcular contadores
                     stateCounts = {
                         'Sin tratamiento': 0,
                         'En proceso': 0,
                         'Resuelto': 0
                     };
                     
-                    // Procesar nuevos datos
-                    data.forEach(reclamo => {
-                        const estado = reclamo.estado || 'Sin tratamiento';
+                    reclamosData.forEach(item => {
+                        const estado = item.estado || 'Sin tratamiento';
                         stateCounts[estado] = (stateCounts[estado] || 0) + 1;
                     });
                     updateCounters();
                     
-                    // Geocodificar y crear marcadores
-                    for (const reclamo of data) {
-                        await geocodeReclamo(reclamo);
-                    }
-                    
+                    // Recrear marcadores con los datos actualizados
                     const locationGroups = {};
                     reclamosData.forEach(item => {
                         const key = getLocationKey(item.lat, item.lng);
@@ -1892,11 +1906,11 @@ _La Libertad Avanza - San Isidro_`;
                         createMarkerForGroup(group);
                     });
                     
-                    // Restaurar posición del mapa
+                    // Restaurar posición
                     map.setCenter(currentCenter);
                     map.setZoom(currentZoom);
                     
-                    // Mostrar notificación discreta
+                    // Mostrar notificación
                     showUpdateNotification();
                     
                     console.log('✅ Mapa actualizado');
@@ -1922,7 +1936,7 @@ _La Libertad Avanza - San Isidro_`;
         // Iniciar auto-refresh
         function startAutoRefresh() {
             autoRefreshInterval = setInterval(checkForUpdates, AUTO_REFRESH_INTERVAL);
-            console.log('🔄 Auto-refresh activado (cada 15 segundos)');
+            console.log('🔄 Auto-refresh activado (cada 5 segundos)');
         }
     </script>
     
