@@ -613,7 +613,7 @@
         
         /* Selector de estado en InfoWindow */
         .estado-selector {
-            padding: 8px 12px;
+            padding: 8px 30px 8px 12px;
             border: 2px solid #e5e7eb;
             border-radius: 6px;
             font-family: 'Montserrat', sans-serif;
@@ -622,6 +622,12 @@
             cursor: pointer;
             background: white;
             transition: all 0.2s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
         }
         
         .estado-selector:hover {
@@ -1607,8 +1613,8 @@
             infoContent += `<p class="infowindow-field"><strong>Dirección:</strong> ${reclamo.direccion}</p>`;
             infoContent += `<p class="infowindow-field"><strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}</p>`;
             infoContent += `
-                <select class="estado-selector" style="background: ${color}; color: white;" 
-                        onchange="actualizarEstado('${reclamo.id}', this.value)">
+                <select class="estado-selector" id="estado-selector-${reclamo.id}" style="background: ${color}; color: white;" 
+                        onchange="cambiarEstado('${reclamo.id}', this.value)">
                     <option value="Sin tratamiento" ${estado === 'Sin tratamiento' ? 'selected' : ''}>Sin tratamiento</option>
                     <option value="En proceso" ${estado === 'En proceso' ? 'selected' : ''}>En proceso</option>
                     <option value="Resuelto" ${estado === 'Resuelto' ? 'selected' : ''}>Resuelto</option>
@@ -1772,6 +1778,11 @@ _La Libertad Avanza - San Isidro_`;
                     const whatsappUrl = `https://web.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
                     window.open(whatsappUrl, '_blank');
                 }
+                
+                // Refrescar la página después de 2 segundos para cargar el número de reclamo actualizado
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
             }, 100);
         }
         
@@ -1801,6 +1812,19 @@ _La Libertad Avanza - San Isidro_`;
         // ============================================
         // ACTUALIZACIÓN DE ESTADO
         // ============================================
+        
+        // Función que se llama cuando cambia el selector
+        function cambiarEstado(id, nuevoEstado) {
+            // Actualizar color del selector inmediatamente
+            const selector = document.getElementById(`estado-selector-${id}`);
+            if (selector) {
+                const color = COLORS[nuevoEstado];
+                selector.style.background = color;
+            }
+            
+            // Actualizar en el servidor y marcadores
+            actualizarEstado(id, nuevoEstado);
+        }
         
         // Función para actualizar el estado de un reclamo
         async function actualizarEstado(id, nuevoEstado) {
