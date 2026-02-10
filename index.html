@@ -1876,8 +1876,12 @@ _La Libertad Avanza - San Isidro_`;
                     const currentCenter = map.getCenter();
                     const currentZoom = map.getZoom();
                     
-                    // Limpiar TODOS los marcadores
-                    markers.forEach(marker => marker.setMap(null));
+                    // Limpiar TODOS los marcadores correctamente
+                    markers.forEach(item => {
+                        if (item && item.marker && typeof item.marker.setMap === 'function') {
+                            item.marker.setMap(null);
+                        }
+                    });
                     markers = [];
                     
                     // Cerrar InfoWindow
