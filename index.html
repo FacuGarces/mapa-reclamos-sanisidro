@@ -611,40 +611,27 @@
             font-weight: 700;
         }
         
-        /* Auto-refresh notificación */
-        .auto-refresh-indicator {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(48, 17, 94, 0.95);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            display: none;
-            align-items: center;
-            gap: 8px;
-            z-index: 2000;
-            font-size: 12px;
+        /* Selector de estado en InfoWindow */
+        .estado-selector {
+            padding: 8px 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
             font-weight: 600;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s ease;
         }
         
-        .auto-refresh-indicator.active {
-            display: flex;
+        .estado-selector:hover {
+            border-color: #30115e;
         }
         
-        .auto-refresh-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #10b981;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(0.8); }
+        .estado-selector:focus {
+            outline: none;
+            border-color: #30115e;
+            box-shadow: 0 0 0 3px rgba(48, 17, 94, 0.1);
         }
         
         /* Ocultar el botón de cerrar del InfoWindow */
@@ -993,12 +980,6 @@
             
             <button class="share-modal-close" id="close-share-modal">Cerrar</button>
         </div>
-    </div>
-    
-    <!-- Indicador de auto-refresh -->
-    <div class="auto-refresh-indicator" id="auto-refresh-indicator">
-        <div class="auto-refresh-dot"></div>
-        <span>Mapa actualizado</span>
     </div>
     
     <div id="map"></div>
@@ -1407,10 +1388,6 @@
                 
                 document.getElementById('loading').style.display = 'none';
                 
-                // Inicializar auto-refresh
-                lastDataHash = getDataHash(reclamos);
-                startAutoRefresh();
-                
             } catch (error) {
                 console.error('Error cargando reclamos:', error);
                 document.getElementById('loading-text').innerHTML = '<p style="color: red;">Error al cargar reclamos</p>';
@@ -1629,7 +1606,14 @@
             infoContent += `<p class="infowindow-field"><strong>Reportado por:</strong> ${reclamo.nombre || 'Anónimo'}</p>`;
             infoContent += `<p class="infowindow-field"><strong>Dirección:</strong> ${reclamo.direccion}</p>`;
             infoContent += `<p class="infowindow-field"><strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}</p>`;
-            infoContent += `<span class="infowindow-badge" style="background: ${color};">${estado}</span>`;
+            infoContent += `
+                <select class="estado-selector" style="background: ${color}; color: white;" 
+                        onchange="actualizarEstado('${reclamo.id}', this.value)">
+                    <option value="Sin tratamiento" ${estado === 'Sin tratamiento' ? 'selected' : ''}>Sin tratamiento</option>
+                    <option value="En proceso" ${estado === 'En proceso' ? 'selected' : ''}>En proceso</option>
+                    <option value="Resuelto" ${estado === 'Resuelto' ? 'selected' : ''}>Resuelto</option>
+                </select>
+            `;
             infoContent += '</div></div>';
             
             const infoWindow = new google.maps.InfoWindow({
@@ -1815,68 +1799,37 @@ _La Libertad Avanza - San Isidro_`;
         }
         
         // ============================================
-        // SISTEMA DE AUTO-REFRESH
+        // ACTUALIZACIÓN DE ESTADO
         // ============================================
         
-        let autoRefreshInterval = null;
-        let lastDataHash = null;
-        const AUTO_REFRESH_INTERVAL = 5000; // 5 segundos - casi instantáneo
-        
-        // Función para calcular un hash simple de los datos
-        function getDataHash(data) {
-            // Hash simple: cantidad de reclamos + suma de IDs + estados
-            return data.length + '_' + data.map(r => `${r.id}-${r.estado}-${r.numeroReclamo}`).join('|');
-        }
-        
-        // Función para actualizar el mapa con nuevos datos SIN re-geocodificar
-        async function checkForUpdates() {
+        // Función para actualizar el estado de un reclamo
+        async function actualizarEstado(id, nuevoEstado) {
             try {
-                const response = await fetch('https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec');
-                const newData = await response.json();
+                const response = await fetch('https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec', {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'updateEstado',
+                        id: id,
+                        estado: nuevoEstado
+                    })
+                });
                 
-                const newHash = getDataHash(newData);
-                
-                // Solo actualizar si hay cambios
-                if (lastDataHash !== null && newHash !== lastDataHash) {
-                    console.log('🔄 Cambios detectados, actualizando mapa...');
+                // Actualizar localmente
+                const reclamo = reclamosData.find(r => r.id === id);
+                if (reclamo) {
+                    const estadoAnterior = reclamo.estado;
+                    reclamo.estado = nuevoEstado;
                     
-                    // Verificar si hay nuevos reclamos (que SÍ necesitan geocoding)
-                    const existingIds = reclamosData.map(r => r.id);
-                    const newReclamos = newData.filter(r => r.id && !existingIds.includes(r.id));
+                    // Actualizar contadores
+                    stateCounts[estadoAnterior] = (stateCounts[estadoAnterior] || 1) - 1;
+                    stateCounts[nuevoEstado] = (stateCounts[nuevoEstado] || 0) + 1;
+                    updateCounters();
                     
-                    if (newReclamos.length > 0) {
-                        console.log(`📍 ${newReclamos.length} reclamo(s) nuevo(s) detectado(s), geocodificando...`);
-                        
-                        // Geocodificar solo los nuevos
-                        for (const reclamo of newReclamos) {
-                            await geocodeReclamo(reclamo);
-                        }
-                        
-                        console.log(`✅ Nuevos reclamos geocodificados. Total: ${reclamosData.length}`);
-                    }
-                    
-                    // Actualizar TODOS los campos de los reclamos existentes
-                    reclamosData.forEach(item => {
-                        const updated = newData.find(r => r.id === item.id);
-                        if (updated) {
-                            // Actualizar TODOS los campos que pueden cambiar
-                            item.estado = updated.estado || 'Sin tratamiento';
-                            item.numeroReclamo = updated.numeroReclamo || '';
-                            item.mensajeEnviado = updated.mensajeEnviado || '';
-                            item.tema = updated.tema || '';
-                            item.descripcion = updated.descripcion || '';
-                            item.nombre = updated.nombre || '';
-                            item.fecha = updated.fecha || null;
-                            item.foto = updated.foto || null;
-                            item.telefono = updated.telefono || '';
-                        }
-                    });
-                    
-                    // Guardar centro y zoom actuales
-                    const currentCenter = map.getCenter();
-                    const currentZoom = map.getZoom();
-                    
-                    // Limpiar TODOS los marcadores correctamente
+                    // Recrear marcadores con los nuevos colores
                     markers.forEach(item => {
                         if (item && item.marker && typeof item.marker.setMap === 'function') {
                             item.marker.setMap(null);
@@ -1884,25 +1837,6 @@ _La Libertad Avanza - San Isidro_`;
                     });
                     markers = [];
                     
-                    // Cerrar InfoWindow
-                    if (currentInfoWindow) {
-                        currentInfoWindow.close();
-                    }
-                    
-                    // Recalcular contadores
-                    stateCounts = {
-                        'Sin tratamiento': 0,
-                        'En proceso': 0,
-                        'Resuelto': 0
-                    };
-                    
-                    reclamosData.forEach(item => {
-                        const estado = item.estado || 'Sin tratamiento';
-                        stateCounts[estado] = (stateCounts[estado] || 0) + 1;
-                    });
-                    updateCounters();
-                    
-                    // Recrear marcadores con los datos actualizados
                     const locationGroups = {};
                     reclamosData.forEach(item => {
                         const key = getLocationKey(item.lat, item.lng);
@@ -1916,37 +1850,14 @@ _La Libertad Avanza - San Isidro_`;
                         createMarkerForGroup(group);
                     });
                     
-                    // Restaurar posición
-                    map.setCenter(currentCenter);
-                    map.setZoom(currentZoom);
-                    
-                    // Mostrar notificación
-                    showUpdateNotification();
-                    
-                    console.log('✅ Mapa actualizado. Total reclamos: ' + reclamosData.length);
+                    console.log(`✅ Estado actualizado: ${estadoAnterior} → ${nuevoEstado}`);
                 }
                 
-                lastDataHash = newHash;
-                
+                return true;
             } catch (error) {
-                console.error('❌ Error al verificar actualizaciones:', error);
+                console.error('Error al actualizar estado:', error);
+                return false;
             }
-        }
-        
-        // Mostrar notificación de actualización
-        function showUpdateNotification() {
-            const indicator = document.getElementById('auto-refresh-indicator');
-            indicator.classList.add('active');
-            
-            setTimeout(() => {
-                indicator.classList.remove('active');
-            }, 2000);
-        }
-        
-        // Iniciar auto-refresh
-        function startAutoRefresh() {
-            autoRefreshInterval = setInterval(checkForUpdates, AUTO_REFRESH_INTERVAL);
-            console.log('🔄 Auto-refresh activado (cada 5 segundos)');
         }
     </script>
     
