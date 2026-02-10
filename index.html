@@ -420,7 +420,7 @@
         let geocoder;
         let currentInfoWindow = null;
         let markers = [];
-        let reclamosData = []; // Guardamos todos los reclamos con sus ubicaciones
+        let reclamosData = [];
         const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec';
         
         const COLORS = {
@@ -455,7 +455,6 @@
             
             geocoder = new google.maps.Geocoder();
             
-            // Cerrar InfoWindow al hacer click en el mapa
             map.addListener('click', function() {
                 if (currentInfoWindow) {
                     currentInfoWindow.close();
@@ -543,7 +542,6 @@
             document.getElementById('count-resuelto').textContent = stateCounts['Resuelto'];
         }
         
-        // Función para calcular tiempo relativo
         function getRelativeTime(fechaString) {
             if (!fechaString) return null;
             
@@ -586,9 +584,7 @@
             }
         }
         
-        // Función para generar clave de ubicación (redondeando coordenadas)
         function getLocationKey(lat, lng) {
-            // Redondear a 4 decimales (~11 metros de precisión)
             return `${lat.toFixed(4)},${lng.toFixed(4)}`;
         }
         
@@ -613,7 +609,6 @@
                 });
                 updateCounters();
                 
-                // Geocodificar todos los reclamos primero
                 let processed = 0;
                 for (const reclamo of reclamos) {
                     await geocodeReclamo(reclamo);
@@ -625,7 +620,6 @@
                     `;
                 }
                 
-                // Agrupar reclamos por ubicación
                 const locationGroups = {};
                 reclamosData.forEach(item => {
                     const key = getLocationKey(item.lat, item.lng);
@@ -635,7 +629,6 @@
                     locationGroups[key].push(item);
                 });
                 
-                // Crear marcadores
                 Object.values(locationGroups).forEach(group => {
                     createMarkerForGroup(group);
                 });
@@ -676,7 +669,6 @@
             const location = { lat: firstItem.lat, lng: firstItem.lng };
             const isMultiple = group.length > 1;
             
-            // Determinar color del marcador (prioridad: rojo > naranja > verde)
             let markerColor = COLORS['Resuelto'];
             let markerEstado = 'Resuelto';
             
@@ -690,13 +682,11 @@
                 }
             });
             
-            // Verificar si alguno tiene foto
             const tieneFoto = group.some(item => item.foto);
             
             let markerIcon;
             
             if (isMultiple) {
-                // Marcador con número
                 const svgMarker = `
                     <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="16" cy="16" r="14" fill="${markerColor}" stroke="white" stroke-width="3"/>
@@ -710,7 +700,6 @@
                     anchor: new google.maps.Point(16, 16)
                 };
             } else if (tieneFoto) {
-                // Marcador con cámara
                 const svgMarker = `
                     <svg width="28" height="28" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="14" cy="14" r="11" fill="${markerColor}" stroke="white" stroke-width="2.5"/>
@@ -729,7 +718,6 @@
                     anchor: new google.maps.Point(14, 14)
                 };
             } else {
-                // Marcador normal
                 markerIcon = {
                     path: google.maps.SymbolPath.CIRCLE,
                     scale: 10,
@@ -775,7 +763,7 @@
                 const fechaFormateada = getRelativeTime(reclamo.fecha);
                 
                 listContent += `
-                    <div class="reclamo-item" onclick="window.showReclamoDetailFromList(${index}, ${JSON.stringify(reclamos).replace(/"/g, '&quot;')})">
+                    <div class="reclamo-item" data-index="${index}">
                         <div class="reclamo-item-title">${reclamo.tema || 'Sin título'}</div>
                         ${fechaFormateada ? `<div class="reclamo-item-date">${fechaFormateada}</div>` : ''}
                         <span class="reclamo-item-badge" style="background: ${color};">${estado}</span>
@@ -792,29 +780,22 @@
             
             infoWindow.open(map, marker);
             currentInfoWindow = infoWindow;
-        }
-        
-        // Función global para mostrar detalle desde la lista
-        window.showReclamoDetailFromList = function(index, reclamosJson) {
-            const reclamos = JSON.parse(reclamosJson);
-            const reclamo = reclamos[index];
             
-            // Buscar el marcador correspondiente
-            const marker = markers.find(m => {
-                const pos = m.marker.getPosition();
-                return Math.abs(pos.lat() - reclamo.lat) < 0.0001 && Math.abs(pos.lng() - reclamo.lng) < 0.0001;
+            google.maps.event.addListenerOnce(infoWindow, 'domready', () => {
+                const items = document.querySelectorAll('.reclamo-item');
+                items.forEach((item) => {
+                    item.addEventListener('click', () => {
+                        const index = parseInt(item.getAttribute('data-index'));
+                        showReclamoDetail(reclamos[index], marker);
+                    });
+                });
             });
-            
-            if (marker) {
-                showReclamoDetail(reclamo, marker.marker);
-            }
-        };
+        }
         
         function showReclamoDetail(reclamo, marker) {
             const estado = reclamo.estado || 'Sin tratamiento';
             const color = COLORS[estado];
             
-            // Construir mensaje para WhatsApp
             const mapsLink = `https://www.google.com/maps?q=${reclamo.lat},${reclamo.lng}`;
             const whatsappMessage = `*Reclamo: ${reclamo.tema || 'Sin título'}*%0A%0A` +
                 `*Dirección:* ${reclamo.direccion}%0A` +
@@ -824,10 +805,8 @@
             
             const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
             
-            // Construir HTML del InfoWindow
             let infoContent = '<div class="infowindow-container">';
             
-            // Botón de WhatsApp
             infoContent += `
                 <div class="infowindow-share-btn" onclick="window.open('${whatsappUrl}', '_blank')">
                     <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
@@ -836,7 +815,6 @@
                 </div>
             `;
             
-            // Si tiene foto, mostrarla arriba
             if (reclamo.foto) {
                 infoContent += `<img src="${reclamo.foto}" class="infowindow-image" alt="Foto del reclamo" onerror="this.style.display='none'">`;
             }
@@ -844,7 +822,6 @@
             infoContent += '<div class="infowindow-content">';
             infoContent += `<h3 class="infowindow-title">${reclamo.tema || 'Sin título'}</h3>`;
             
-            // Agregar fecha
             if (reclamo.fecha) {
                 const fechaFormateada = getRelativeTime(reclamo.fecha);
                 if (fechaFormateada) {
