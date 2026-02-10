@@ -754,43 +754,51 @@
         }
         
         function showReclamosList(reclamos, marker) {
-            let listContent = '<div class="reclamos-list">';
-            listContent += `<h3 class="reclamos-list-title">${reclamos.length} reclamos en esta ubicación</h3>`;
-            
-            reclamos.forEach((reclamo, index) => {
-                const estado = reclamo.estado || 'Sin tratamiento';
-                const color = COLORS[estado];
-                const fechaFormateada = getRelativeTime(reclamo.fecha);
-                
-                listContent += `
-                    <div class="reclamo-item" data-index="${index}">
-                        <div class="reclamo-item-title">${reclamo.tema || 'Sin título'}</div>
-                        ${fechaFormateada ? `<div class="reclamo-item-date">${fechaFormateada}</div>` : ''}
-                        <span class="reclamo-item-badge" style="background: ${color};">${estado}</span>
-                    </div>
-                `;
+    let listContent = '<div class="reclamos-list">';
+    listContent += `<h3 class="reclamos-list-title">${reclamos.length} reclamos en esta ubicación</h3>`;
+    
+    reclamos.forEach((reclamo, index) => {
+        const estado = reclamo.estado || 'Sin tratamiento';
+        const color = COLORS[estado];
+        const fechaFormateada = getRelativeTime(reclamo.fecha);
+        
+        listContent += `
+            <div class="reclamo-item" data-index="${index}">
+                <div class="reclamo-item-title">${reclamo.tema || 'Sin título'}</div>
+                ${fechaFormateada ? `<div class="reclamo-item-date">${fechaFormateada}</div>` : ''}
+                <span class="reclamo-item-badge" style="background: ${color};">${estado}</span>
+            </div>
+        `;
+    });
+    
+    listContent += '</div>';
+    
+    const infoWindow = new google.maps.InfoWindow({
+        content: listContent,
+        maxWidth: 350
+    });
+    
+    infoWindow.open(map, marker);
+    currentInfoWindow = infoWindow;
+    
+    google.maps.event.addListenerOnce(infoWindow, 'domready', () => {
+        const items = document.querySelectorAll('.reclamo-item');
+        items.forEach((item) => {
+            item.addEventListener('click', () => {
+                const index = parseInt(item.getAttribute('data-index'));
+                // Cerrar la lista antes de abrir el detalle
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                    currentInfoWindow = null;
+                }
+                // Pequeño delay para que se vea suave la transición
+                setTimeout(() => {
+                    showReclamoDetail(reclamos[index], marker);
+                }, 100);
             });
-            
-            listContent += '</div>';
-            
-            const infoWindow = new google.maps.InfoWindow({
-                content: listContent,
-                maxWidth: 350
-            });
-            
-            infoWindow.open(map, marker);
-            currentInfoWindow = infoWindow;
-            
-            google.maps.event.addListenerOnce(infoWindow, 'domready', () => {
-                const items = document.querySelectorAll('.reclamo-item');
-                items.forEach((item) => {
-                    item.addEventListener('click', () => {
-                        const index = parseInt(item.getAttribute('data-index'));
-                        showReclamoDetail(reclamos[index], marker);
-                    });
-                });
-            });
-        }
+        });
+    });
+}
         
         function showReclamoDetail(reclamo, marker) {
             const estado = reclamo.estado || 'Sin tratamiento';
