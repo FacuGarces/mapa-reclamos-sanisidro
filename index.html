@@ -507,6 +507,21 @@
             margin-bottom: 8px;
         }
         
+        .share-numero-help {
+            font-size: 12px;
+            color: #333;
+            background: white;
+            padding: 10px 12px;
+            border-radius: 4px;
+            border: 2px solid #30115e;
+            margin-bottom: 10px;
+        }
+        
+        .share-numero-help strong {
+            color: #30115e;
+            font-weight: 700;
+        }
+        
         .share-numero-input {
             width: 100%;
             padding: 10px;
@@ -922,7 +937,10 @@
             
             <div class="share-numero-input-container" id="share-numero-container">
                 <div class="share-numero-label">Ingrese el número de reclamo de la Municipalidad:</div>
-                <input type="text" class="share-numero-input" id="share-numero-input" placeholder="Ej: 12345">
+                <div class="share-numero-help">
+                    💡 <strong>Recordá:</strong> Llamá al <strong>*147</strong> para elevar el reclamo a la municipalidad y obtener este número
+                </div>
+                <input type="text" class="share-numero-input" id="share-numero-input" placeholder="Número de reclamo">
                 <div class="share-numero-buttons">
                     <button class="share-numero-btn share-numero-btn-cancel" id="share-numero-cancel">Cancelar</button>
                     <button class="share-numero-btn share-numero-btn-save" id="share-numero-save">Guardar y Enviar</button>
@@ -1668,12 +1686,14 @@
         function enviarMensajeVecino(numeroReclamo) {
             if (!currentReclamoData) return;
             
+            // Limpiar la dirección (quitar el ", San Isidro, Buenos Aires, Argentina" que agregamos)
+            const direccionLimpia = currentReclamoData.direccion.replace(', San Isidro, Buenos Aires, Argentina', ', San Isidro');
+            
             // Generar mensaje para el vecino con número de reclamo
-            const mensaje = `Hola! Tu reclamo sobre "${currentReclamoData.tema}" en ${currentReclamoData.direccion} ha sido registrado.
+            const mensaje = `Hola! Tu reclamo sobre "${currentReclamoData.tema}" ha sido registrado.
 
-📋 *Número de Reclamo:* ${numeroReclamo}
-📍 *Ubicación:* ${currentReclamoData.direccion}
-📅 *Estado:* ${currentReclamoData.estado}
+*Número de Reclamo:* ${numeroReclamo}
+*Ubicación:* ${direccionLimpia}
 
 Podés hacer el seguimiento de tu reclamo con este número. ¡Gracias por tu participación!
 
