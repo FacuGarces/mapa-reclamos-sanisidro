@@ -275,6 +275,56 @@
             height: 24px;
         }
         
+        /* Lista de reclamos múltiples */
+        .reclamos-list {
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .reclamos-list-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .reclamo-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .reclamo-item:hover {
+            border-color: #30115e;
+            background: #f9fafb;
+        }
+        
+        .reclamo-item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .reclamo-item-date {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+        
+        .reclamo-item-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+        
         /* Estilos para mobile */
         @media (max-width: 768px) {
             .filters {
@@ -345,6 +395,10 @@
                 width: 20px;
                 height: 20px;
             }
+            
+            .reclamos-list {
+                max-height: 300px;
+            }
         }
     </style>
 </head>
@@ -366,6 +420,7 @@
         let geocoder;
         let currentInfoWindow = null;
         let markers = [];
+        let reclamosData = []; // Guardamos todos los reclamos con sus ubicaciones
         const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec';
         
         const COLORS = {
@@ -531,6 +586,12 @@
             }
         }
         
+        // Función para generar clave de ubicación (redondeando coordenadas)
+        function getLocationKey(lat, lng) {
+            // Redondear a 4 decimales (~11 metros de precisión)
+            return `${lat.toFixed(4)},${lng.toFixed(4)}`;
+        }
+        
         async function loadReclamos() {
             try {
                 const response = await fetch(SHEET_URL);
@@ -552,9 +613,10 @@
                 });
                 updateCounters();
                 
+                // Geocodificar todos los reclamos primero
                 let processed = 0;
                 for (const reclamo of reclamos) {
-                    await geocodeAndAddMarker(reclamo);
+                    await geocodeReclamo(reclamo);
                     processed++;
                     
                     document.getElementById('loading').innerHTML = `
@@ -562,6 +624,21 @@
                         <p>Procesando reclamos... ${processed}/${reclamos.length}</p>
                     `;
                 }
+                
+                // Agrupar reclamos por ubicación
+                const locationGroups = {};
+                reclamosData.forEach(item => {
+                    const key = getLocationKey(item.lat, item.lng);
+                    if (!locationGroups[key]) {
+                        locationGroups[key] = [];
+                    }
+                    locationGroups[key].push(item);
+                });
+                
+                // Crear marcadores
+                Object.values(locationGroups).forEach(group => {
+                    createMarkerForGroup(group);
+                });
                 
                 document.getElementById('loading').style.display = 'none';
                 
@@ -571,7 +648,7 @@
             }
         }
         
-        function geocodeAndAddMarker(reclamo) {
+        function geocodeReclamo(reclamo) {
             return new Promise((resolve) => {
                 const direccionCompleta = reclamo.direccion;
                 
@@ -579,118 +656,216 @@
                     if (status === 'OK') {
                         const location = results[0].geometry.location;
                         const estado = reclamo.estado || 'Sin tratamiento';
-                        const color = COLORS[estado];
-                        const tieneFoto = reclamo.foto ? true : false;
                         
-                        let markerIcon;
-                        
-                        if (tieneFoto) {
-                            const svgMarker = `
-                                <svg width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="14" cy="14" r="11" fill="${color}" stroke="white" stroke-width="2.5"/>
-                                    <g transform="translate(20, 6)">
-                                        <circle cx="0" cy="0" r="5.5" fill="white" stroke="${color}" stroke-width="1"/>
-                                        <rect x="-3" y="-1.5" width="6" height="3" rx="0.5" fill="${color}"/>
-                                        <rect x="-2" y="-2.5" width="4" height="1" rx="0.3" fill="${color}"/>
-                                        <circle cx="0" cy="0" r="1.2" fill="white"/>
-                                    </g>
-                                </svg>
-                            `;
-                            
-                            markerIcon = {
-                                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgMarker),
-                                scaledSize: new google.maps.Size(28, 28),
-                                anchor: new google.maps.Point(14, 14)
-                            };
-                        } else {
-                            markerIcon = {
-                                path: google.maps.SymbolPath.CIRCLE,
-                                scale: 10,
-                                fillColor: color,
-                                fillOpacity: 0.9,
-                                strokeColor: '#ffffff',
-                                strokeWeight: 2
-                            };
-                        }
-                        
-                        const marker = new google.maps.Marker({
-                            position: location,
-                            map: map,
-                            title: reclamo.tema,
-                            icon: markerIcon
-                        });
-                        
-                        markers.push({
-                            marker: marker,
+                        reclamosData.push({
+                            ...reclamo,
+                            lat: location.lat(),
+                            lng: location.lng(),
                             estado: estado
                         });
-                        
-                        // Construir mensaje para WhatsApp (sin emojis)
-                        const lat = location.lat();
-                        const lng = location.lng();
-                        const mapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-                        const whatsappMessage = `*Reclamo: ${reclamo.tema || 'Sin título'}*%0A%0A` +
-                            `*Dirección:* ${reclamo.direccion}%0A` +
-                            `*Descripción:* ${reclamo.descripcion || 'Sin descripción'}%0A` +
-                            `*Estado:* ${estado}%0A%0A` +
-                            `Ver en mapa: ${mapsLink}`;
-                        
-                        const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
-                        
-                        // Construir HTML del InfoWindow
-                        let infoContent = '<div class="infowindow-container">';
-                        
-                        // Botón de WhatsApp
-                        infoContent += `
-                            <div class="infowindow-share-btn" onclick="window.open('${whatsappUrl}', '_blank')">
-                                <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                                </svg>
-                            </div>
-                        `;
-                        
-                        // Si tiene foto, mostrarla arriba
-                        if (reclamo.foto) {
-                            infoContent += `<img src="${reclamo.foto}" class="infowindow-image" alt="Foto del reclamo" onerror="this.style.display='none'">`;
-                        }
-                        
-                        infoContent += '<div class="infowindow-content">';
-                        infoContent += `<h3 class="infowindow-title">${reclamo.tema || 'Sin título'}</h3>`;
-                        
-                        // Agregar fecha
-                        if (reclamo.fecha) {
-                            const fechaFormateada = getRelativeTime(reclamo.fecha);
-                            if (fechaFormateada) {
-                                infoContent += `<p class="infowindow-date">${fechaFormateada}</p>`;
-                            }
-                        }
-                        
-                        infoContent += `<p class="infowindow-field"><strong>Reportado por:</strong> ${reclamo.nombre || 'Anónimo'}</p>`;
-                        infoContent += `<p class="infowindow-field"><strong>Dirección:</strong> ${reclamo.direccion}</p>`;
-                        infoContent += `<p class="infowindow-field"><strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}</p>`;
-                        infoContent += `<span class="infowindow-badge" style="background: ${color};">${estado}</span>`;
-                        infoContent += '</div></div>';
-                        
-                        const infoWindow = new google.maps.InfoWindow({
-                            content: infoContent,
-                            maxWidth: 350,
-                            disableAutoPan: false
-                        });
-                        
-                        marker.addListener('click', () => {
-                            if (currentInfoWindow) {
-                                currentInfoWindow.close();
-                            }
-                            infoWindow.open(map, marker);
-                            currentInfoWindow = infoWindow;
-                        });
-                        
                     } else {
                         console.error('Geocoding falló para:', reclamo.direccion, status);
                     }
                     resolve();
                 });
             });
+        }
+        
+        function createMarkerForGroup(group) {
+            const firstItem = group[0];
+            const location = { lat: firstItem.lat, lng: firstItem.lng };
+            const isMultiple = group.length > 1;
+            
+            // Determinar color del marcador (prioridad: rojo > naranja > verde)
+            let markerColor = COLORS['Resuelto'];
+            let markerEstado = 'Resuelto';
+            
+            group.forEach(item => {
+                if (item.estado === 'Sin tratamiento') {
+                    markerColor = COLORS['Sin tratamiento'];
+                    markerEstado = 'Sin tratamiento';
+                } else if (item.estado === 'En proceso' && markerEstado !== 'Sin tratamiento') {
+                    markerColor = COLORS['En proceso'];
+                    markerEstado = 'En proceso';
+                }
+            });
+            
+            // Verificar si alguno tiene foto
+            const tieneFoto = group.some(item => item.foto);
+            
+            let markerIcon;
+            
+            if (isMultiple) {
+                // Marcador con número
+                const svgMarker = `
+                    <svg width="32" height="32" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="16" cy="16" r="14" fill="${markerColor}" stroke="white" stroke-width="3"/>
+                        <text x="16" y="21" font-family="Montserrat, Arial" font-size="14" font-weight="700" fill="white" text-anchor="middle">${group.length}</text>
+                    </svg>
+                `;
+                
+                markerIcon = {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgMarker),
+                    scaledSize: new google.maps.Size(32, 32),
+                    anchor: new google.maps.Point(16, 16)
+                };
+            } else if (tieneFoto) {
+                // Marcador con cámara
+                const svgMarker = `
+                    <svg width="28" height="28" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="14" cy="14" r="11" fill="${markerColor}" stroke="white" stroke-width="2.5"/>
+                        <g transform="translate(20, 6)">
+                            <circle cx="0" cy="0" r="5.5" fill="white" stroke="${markerColor}" stroke-width="1"/>
+                            <rect x="-3" y="-1.5" width="6" height="3" rx="0.5" fill="${markerColor}"/>
+                            <rect x="-2" y="-2.5" width="4" height="1" rx="0.3" fill="${markerColor}"/>
+                            <circle cx="0" cy="0" r="1.2" fill="white"/>
+                        </g>
+                    </svg>
+                `;
+                
+                markerIcon = {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svgMarker),
+                    scaledSize: new google.maps.Size(28, 28),
+                    anchor: new google.maps.Point(14, 14)
+                };
+            } else {
+                // Marcador normal
+                markerIcon = {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: markerColor,
+                    fillOpacity: 0.9,
+                    strokeColor: '#ffffff',
+                    strokeWeight: 2
+                };
+            }
+            
+            const marker = new google.maps.Marker({
+                position: location,
+                map: map,
+                title: isMultiple ? `${group.length} reclamos en esta ubicación` : firstItem.tema,
+                icon: markerIcon
+            });
+            
+            markers.push({
+                marker: marker,
+                estado: markerEstado
+            });
+            
+            marker.addListener('click', () => {
+                if (currentInfoWindow) {
+                    currentInfoWindow.close();
+                }
+                
+                if (isMultiple) {
+                    showReclamosList(group, marker);
+                } else {
+                    showReclamoDetail(firstItem, marker);
+                }
+            });
+        }
+        
+        function showReclamosList(reclamos, marker) {
+            let listContent = '<div class="reclamos-list">';
+            listContent += `<h3 class="reclamos-list-title">${reclamos.length} reclamos en esta ubicación</h3>`;
+            
+            reclamos.forEach((reclamo, index) => {
+                const estado = reclamo.estado || 'Sin tratamiento';
+                const color = COLORS[estado];
+                const fechaFormateada = getRelativeTime(reclamo.fecha);
+                
+                listContent += `
+                    <div class="reclamo-item" onclick="window.showReclamoDetailFromList(${index}, ${JSON.stringify(reclamos).replace(/"/g, '&quot;')})">
+                        <div class="reclamo-item-title">${reclamo.tema || 'Sin título'}</div>
+                        ${fechaFormateada ? `<div class="reclamo-item-date">${fechaFormateada}</div>` : ''}
+                        <span class="reclamo-item-badge" style="background: ${color};">${estado}</span>
+                    </div>
+                `;
+            });
+            
+            listContent += '</div>';
+            
+            const infoWindow = new google.maps.InfoWindow({
+                content: listContent,
+                maxWidth: 350
+            });
+            
+            infoWindow.open(map, marker);
+            currentInfoWindow = infoWindow;
+        }
+        
+        // Función global para mostrar detalle desde la lista
+        window.showReclamoDetailFromList = function(index, reclamosJson) {
+            const reclamos = JSON.parse(reclamosJson);
+            const reclamo = reclamos[index];
+            
+            // Buscar el marcador correspondiente
+            const marker = markers.find(m => {
+                const pos = m.marker.getPosition();
+                return Math.abs(pos.lat() - reclamo.lat) < 0.0001 && Math.abs(pos.lng() - reclamo.lng) < 0.0001;
+            });
+            
+            if (marker) {
+                showReclamoDetail(reclamo, marker.marker);
+            }
+        };
+        
+        function showReclamoDetail(reclamo, marker) {
+            const estado = reclamo.estado || 'Sin tratamiento';
+            const color = COLORS[estado];
+            
+            // Construir mensaje para WhatsApp
+            const mapsLink = `https://www.google.com/maps?q=${reclamo.lat},${reclamo.lng}`;
+            const whatsappMessage = `*Reclamo: ${reclamo.tema || 'Sin título'}*%0A%0A` +
+                `*Dirección:* ${reclamo.direccion}%0A` +
+                `*Descripción:* ${reclamo.descripcion || 'Sin descripción'}%0A` +
+                `*Estado:* ${estado}%0A%0A` +
+                `Ver en mapa: ${mapsLink}`;
+            
+            const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
+            
+            // Construir HTML del InfoWindow
+            let infoContent = '<div class="infowindow-container">';
+            
+            // Botón de WhatsApp
+            infoContent += `
+                <div class="infowindow-share-btn" onclick="window.open('${whatsappUrl}', '_blank')">
+                    <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                </div>
+            `;
+            
+            // Si tiene foto, mostrarla arriba
+            if (reclamo.foto) {
+                infoContent += `<img src="${reclamo.foto}" class="infowindow-image" alt="Foto del reclamo" onerror="this.style.display='none'">`;
+            }
+            
+            infoContent += '<div class="infowindow-content">';
+            infoContent += `<h3 class="infowindow-title">${reclamo.tema || 'Sin título'}</h3>`;
+            
+            // Agregar fecha
+            if (reclamo.fecha) {
+                const fechaFormateada = getRelativeTime(reclamo.fecha);
+                if (fechaFormateada) {
+                    infoContent += `<p class="infowindow-date">${fechaFormateada}</p>`;
+                }
+            }
+            
+            infoContent += `<p class="infowindow-field"><strong>Reportado por:</strong> ${reclamo.nombre || 'Anónimo'}</p>`;
+            infoContent += `<p class="infowindow-field"><strong>Dirección:</strong> ${reclamo.direccion}</p>`;
+            infoContent += `<p class="infowindow-field"><strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}</p>`;
+            infoContent += `<span class="infowindow-badge" style="background: ${color};">${estado}</span>`;
+            infoContent += '</div></div>';
+            
+            const infoWindow = new google.maps.InfoWindow({
+                content: infoContent,
+                maxWidth: 350,
+                disableAutoPan: false
+            });
+            
+            infoWindow.open(map, marker);
+            currentInfoWindow = infoWindow;
         }
     </script>
     
