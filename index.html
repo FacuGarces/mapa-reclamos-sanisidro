@@ -1723,7 +1723,8 @@
             
             infoContent += '</div></div>';
             
-            console.log('📝 InfoWindow HTML generado con menú');
+            console.log('📝 InfoWindow HTML generado');
+            console.log('HTML completo:', infoContent);
             
             const infoWindow = new google.maps.InfoWindow({
                 content: infoContent,
@@ -1733,6 +1734,14 @@
             
             infoWindow.open(map, marker);
             currentInfoWindow = infoWindow;
+            
+            // Debug: Verificar que los botones se rendericen
+            setTimeout(() => {
+                const bottomBar = document.querySelector('.infowindow-bottom-bar');
+                const buttons = document.querySelectorAll('.action-icon-btn');
+                console.log('🔍 Bottom bar encontrada:', bottomBar);
+                console.log('🔍 Botones encontrados:', buttons.length);
+            }, 500);
         }
         
         // ============================================
