@@ -26,7 +26,32 @@
             padding: 20px;
             text-align: center;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            position: relative;
         }
+
+        .header-back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+            flex-shrink: 0;
+            position: absolute;
+            left: 20px;
+        }
+
+        .header-back-btn:hover { background: rgba(255,255,255,0.25); }
+        .header-back-btn svg { width: 20px; height: 20px; fill: white; }
         
         #header h1 {
             font-size: 28px;
@@ -630,7 +655,6 @@
             flex: 1;
         }
         
-        /* Flechita blanca que se ve en cualquier fondo de color */
         .estado-selector {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='white' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
         }
@@ -645,7 +669,6 @@
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
         }
         
-        /* Estilos para las opciones del dropdown */
         .estado-selector option {
             background: white;
             color: #333;
@@ -889,15 +912,22 @@
         
         /* Estilos para mobile */
         @media (max-width: 768px) {
-            /* Ocultar barra completa en mobile */
             .search-container {
                 display: none;
             }
             
-            /* Mostrar botón de lupa en mobile */
             .search-button-mobile {
                 display: flex;
             }
+
+            #header {
+                padding: 14px 60px;
+            }
+
+            #header h1 {
+                font-size: 18px;
+            }
+
             #total-counter {
                 font-size: 14px;
                 padding: 10px 12px;
@@ -991,14 +1021,17 @@
                 max-height: 300px;
             }
         }
-        
-        /* Menú de acciones */
     </style>
 </head>
 <body>
     <div id="header">
-        <h1>🗺️ Mapa de Reclamos - San Isidro</h1>
-        <p>Seguimiento en tiempo real de reclamos municipales</p>
+        <a href="index.html" class="header-back-btn" title="Volver al inicio">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </a>
+        <div>
+            <h1>🗺️ Mapa de Reclamos - San Isidro</h1>
+            <p>Seguimiento en tiempo real de reclamos municipales</p>
+        </div>
     </div>
     
     <div id="loading">
@@ -1138,7 +1171,6 @@
             const filtersDiv = document.createElement('div');
             filtersDiv.className = 'filters collapsed';
             
-            // Crear contador total
             const totalCounterDiv = document.createElement('div');
             totalCounterDiv.id = 'total-counter';
             totalCounterDiv.innerHTML = 'Reclamos: <span id="total-count">0</span>';
@@ -1194,16 +1226,13 @@
                 map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].clear();
                 map.controls[google.maps.ControlPosition.LEFT_BOTTOM].clear();
                 
-                // Contador siempre arriba a la izquierda
                 map.controls[google.maps.ControlPosition.TOP_LEFT].push(totalCounterDiv);
                 
                 if (currentMobile) {
-                    // En mobile: botón centrar y filtro abajo a la derecha, lupa abajo a la izquierda
                     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
                     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(filtersDiv);
                     map.controls[google.maps.ControlPosition.LEFT_BOTTOM].push(searchButtonMobile);
                 } else {
-                    // En desktop: filtro y búsqueda arriba a la izquierda, botón centrar abajo a la derecha
                     map.controls[google.maps.ControlPosition.TOP_LEFT].push(filtersDiv);
                     map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchContainer);
                     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(centerBtn);
@@ -1224,11 +1253,9 @@
             `;
             centerBtn.title = 'Ver todos los reclamos';
             
-            // Detectar si es dispositivo touch (mobile)
             const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
             
             centerBtn.addEventListener('click', () => {
-                // Solo aplicar feedback visual temporal en mobile
                 if (isTouchDevice) {
                     centerBtn.style.background = '#30115e';
                     centerBtn.querySelector('svg').style.fill = 'white';
@@ -1246,7 +1273,6 @@
         }
         
         function addSearchControls() {
-            // Barra de búsqueda para desktop
             const searchContainer = document.createElement('div');
             searchContainer.className = 'search-container';
             searchContainer.innerHTML = `
@@ -1256,7 +1282,6 @@
                 <input type="text" class="search-input" id="search-input-desktop" placeholder="Buscar dirección...">
             `;
             
-            // Botón de lupa para mobile
             const searchButtonMobile = document.createElement('div');
             searchButtonMobile.className = 'search-button-mobile';
             searchButtonMobile.innerHTML = `
@@ -1265,7 +1290,6 @@
                 </svg>
             `;
             
-            // Event listeners para búsqueda en desktop
             const searchInputDesktop = searchContainer.querySelector('#search-input-desktop');
             searchInputDesktop.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -1273,7 +1297,6 @@
                 }
             });
             
-            // Event listener para abrir modal en mobile
             searchButtonMobile.addEventListener('click', () => {
                 document.getElementById('search-modal').classList.add('active');
                 document.getElementById('search-input-mobile').focus();
@@ -1283,19 +1306,16 @@
         }
         
         function setupSearchModal() {
-            // Cerrar modal
             document.getElementById('close-search-modal').addEventListener('click', () => {
                 document.getElementById('search-modal').classList.remove('active');
             });
             
-            // Cerrar al hacer click fuera
             document.getElementById('search-modal').addEventListener('click', (e) => {
                 if (e.target.id === 'search-modal') {
                     document.getElementById('search-modal').classList.remove('active');
                 }
             });
             
-            // Búsqueda en mobile
             document.getElementById('search-button-modal').addEventListener('click', () => {
                 const query = document.getElementById('search-input-mobile').value;
                 performSearch(query);
@@ -1317,7 +1337,6 @@
                 return;
             }
             
-            // Agregar "San Isidro, Buenos Aires, Argentina" si no está incluido
             let searchQuery = query;
             if (!query.toLowerCase().includes('san isidro') && !query.toLowerCase().includes('buenos aires')) {
                 searchQuery = `${query}, San Isidro, Buenos Aires, Argentina`;
@@ -1329,7 +1348,6 @@
                     map.setCenter(location);
                     map.setZoom(16);
                     
-                    // Crear marcador temporal en la ubicación buscada
                     const tempMarker = new google.maps.Marker({
                         position: location,
                         map: map,
@@ -1344,7 +1362,6 @@
                         }
                     });
                     
-                    // Eliminar el marcador temporal después de 3 segundos
                     setTimeout(() => {
                         tempMarker.setMap(null);
                     }, 3000);
@@ -1369,7 +1386,6 @@
             
             map.fitBounds(bounds);
             
-            // Si solo hay un marcador, hacer zoom apropiado
             if (visibleMarkers.length === 1) {
                 map.setZoom(15);
             }
@@ -1387,7 +1403,6 @@
             document.getElementById('count-proceso').textContent = stateCounts['En proceso'];
             document.getElementById('count-resuelto').textContent = stateCounts['Resuelto'];
             
-            // Actualizar contador total
             const total = stateCounts['Sin tratamiento'] + stateCounts['En proceso'] + stateCounts['Resuelto'];
             document.getElementById('total-count').textContent = total;
         }
@@ -1660,9 +1675,6 @@
                 `*Estado:* ${estado}%0A%0A` +
                 `Ver en mapa: ${mapsLink}`;
             
-            const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
-            
-            // Guardar datos del reclamo para el modal
             const reclamoData = {
                 id: reclamo.id,
                 nombre: reclamo.nombre,
@@ -1697,7 +1709,6 @@
             infoContent += `<p class="infowindow-field"><strong>Dirección:</strong> ${reclamo.direccion}</p>`;
             infoContent += `<p class="infowindow-field"><strong>Descripción:</strong> ${reclamo.descripcion || 'Sin descripción'}</p>`;
             
-            // Selector de estado + Iconos de acción al lado
             infoContent += `
                 <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
                     <select class="estado-selector" id="estado-selector-${reclamo.id}" style="background-color: ${color}; color: white; flex: 1;" 
@@ -1725,9 +1736,6 @@
             
             infoContent += '</div></div>';
             
-            console.log('📝 InfoWindow HTML generado');
-            console.log('HTML completo:', infoContent);
-            
             const infoWindow = new google.maps.InfoWindow({
                 content: infoContent,
                 maxWidth: 350,
@@ -1736,68 +1744,43 @@
             
             infoWindow.open(map, marker);
             currentInfoWindow = infoWindow;
-            
-            // Debug: Verificar que los botones se rendericen
-            setTimeout(() => {
-                const bottomBar = document.querySelector('.infowindow-bottom-bar');
-                const buttons = document.querySelectorAll('.action-icon-btn');
-                console.log('🔍 Bottom bar encontrada:', bottomBar);
-                console.log('🔍 Botones encontrados:', buttons.length);
-            }, 500);
         }
-        
-        // ============================================
-        // EXPORTAR PDF
-        // ============================================
         
         async function exportarPDF(reclamoData) {
             try {
-                
-                // Cerrar InfoWindow temporalmente para captura limpia
                 if (currentInfoWindow) {
                     currentInfoWindow.close();
                 }
                 
-                console.log('📸 Capturando mapa...');
-                
-                // Esperar un momento para que se cierre el InfoWindow
                 await new Promise(resolve => setTimeout(resolve, 300));
                 
-                // Capturar el mapa
                 const mapElement = document.getElementById('map');
                 const canvas = await html2canvas(mapElement, {
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: '#ffffff',
-                    scale: 2 // Mayor calidad
+                    scale: 2
                 });
                 
-                console.log('✅ Mapa capturado');
-                
-                // Crear PDF
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 
-                // Dimensiones A4
                 const pdfWidth = 210;
                 const pdfHeight = 297;
                 
-                // Agregar título
                 pdf.setFontSize(18);
-                pdf.setTextColor(48, 17, 94); // Color violeta
+                pdf.setTextColor(48, 17, 94);
                 pdf.text('Reclamo Vecinal - San Isidro', 105, 20, { align: 'center' });
                 
-                // Agregar imagen del mapa
                 const imgData = canvas.toDataURL('image/png');
-                const imgWidth = pdfWidth - 20; // Margen de 10mm a cada lado
+                const imgWidth = pdfWidth - 20;
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                const maxImgHeight = 120; // Altura máxima para el mapa
+                const maxImgHeight = 120;
                 const finalImgHeight = Math.min(imgHeight, maxImgHeight);
                 const finalImgWidth = (canvas.width * finalImgHeight) / canvas.height;
                 
                 pdf.addImage(imgData, 'PNG', (pdfWidth - finalImgWidth) / 2, 30, finalImgWidth, finalImgHeight);
                 
-                // Agregar datos del reclamo
                 let yPos = 30 + finalImgHeight + 15;
                 
                 pdf.setFontSize(14);
@@ -1809,7 +1792,6 @@
                 pdf.setFontSize(11);
                 pdf.setFont(undefined, 'normal');
                 
-                // ID del reclamo
                 if (reclamoData.id) {
                     pdf.setFont(undefined, 'bold');
                     pdf.text('ID:', 10, yPos);
@@ -1818,7 +1800,6 @@
                     yPos += 7;
                 }
                 
-                // Número de reclamo municipal
                 if (reclamoData.numeroReclamo) {
                     pdf.setFont(undefined, 'bold');
                     pdf.text('N° Reclamo Municipal:', 10, yPos);
@@ -1827,7 +1808,6 @@
                     yPos += 7;
                 }
                 
-                // Tema
                 pdf.setFont(undefined, 'bold');
                 pdf.text('Tema:', 10, yPos);
                 pdf.setFont(undefined, 'normal');
@@ -1835,7 +1815,6 @@
                 pdf.text(temaLines, 30, yPos);
                 yPos += 7 * temaLines.length;
                 
-                // Estado
                 pdf.setFont(undefined, 'bold');
                 pdf.text('Estado:', 10, yPos);
                 pdf.setFont(undefined, 'normal');
@@ -1847,7 +1826,6 @@
                 pdf.setTextColor(0, 0, 0);
                 yPos += 7;
                 
-                // Descripción
                 pdf.setFont(undefined, 'bold');
                 pdf.text('Descripción:', 10, yPos);
                 yPos += 5;
@@ -1856,7 +1834,6 @@
                 pdf.text(descLines, 10, yPos);
                 yPos += 7 * descLines.length;
                 
-                // Dirección
                 pdf.setFont(undefined, 'bold');
                 pdf.text('Dirección:', 10, yPos);
                 yPos += 5;
@@ -1866,7 +1843,6 @@
                 pdf.text(dirLines, 10, yPos);
                 yPos += 7 * dirLines.length;
                 
-                // Reportado por
                 if (reclamoData.nombre) {
                     pdf.setFont(undefined, 'bold');
                     pdf.text('Reportado por:', 10, yPos);
@@ -1875,7 +1851,6 @@
                     yPos += 7;
                 }
                 
-                // Fecha
                 if (reclamoData.fecha) {
                     const fechaFormateada = getRelativeTime(reclamoData.fecha);
                     if (fechaFormateada) {
@@ -1887,17 +1862,13 @@
                     }
                 }
                 
-                // Footer
                 pdf.setFontSize(10);
                 pdf.setTextColor(100, 100, 100);
                 pdf.text('La Libertad Avanza - San Isidro', 105, pdfHeight - 10, { align: 'center' });
                 pdf.text(new Date().toLocaleDateString('es-AR'), 105, pdfHeight - 5, { align: 'center' });
                 
-                // Guardar PDF
-                const nombreArchivo = `Reclamo_${reclamoData.id}_${reclamoData.tema.substring(0, 30).replace(/[^a-z0-9]/gi, '_')}.pdf`;
+                const nombreArchivo = `Reclamo_${reclamoData.id}_${reclamoData.tema.substring(0, 30).replace(/[^a-z0-9áéíóú\s]/gi, '_')}.pdf`;
                 pdf.save(nombreArchivo);
-                
-                console.log('✅ PDF generado:', nombreArchivo);
                 
             } catch (error) {
                 console.error('❌ Error al generar PDF:', error);
@@ -1905,20 +1876,14 @@
             }
         }
         
-        // ============================================
-        // MODAL DE COMPARTIR WHATSAPP
-        // ============================================
-        
         let currentReclamoData = null;
         
-        // Función para abrir el modal de compartir
         function openShareModal(reclamoData) {
             currentReclamoData = reclamoData;
             document.getElementById('share-modal').classList.add('active');
             document.getElementById('share-numero-container').classList.remove('active');
             document.getElementById('share-numero-input').value = '';
             
-            // Verificar si ya se envió mensaje al vecino (desde el Sheet, no localStorage)
             if (reclamoData.mensajeEnviado && reclamoData.mensajeEnviado.toLowerCase() === 'sí') {
                 document.getElementById('share-warning').classList.add('active');
             } else {
@@ -1926,13 +1891,11 @@
             }
         }
         
-        // Cerrar modal
         document.getElementById('close-share-modal').addEventListener('click', () => {
             document.getElementById('share-modal').classList.remove('active');
             currentReclamoData = null;
         });
         
-        // Click fuera del modal para cerrar
         document.getElementById('share-modal').addEventListener('click', (e) => {
             if (e.target.id === 'share-modal') {
                 document.getElementById('share-modal').classList.remove('active');
@@ -1940,69 +1903,47 @@
             }
         });
         
-        // Opción 1: Uso Interno
         document.getElementById('share-interno').addEventListener('click', () => {
             if (!currentReclamoData) return;
-            
-            // Usar el mensaje original (sin número de reclamo)
             const whatsappUrl = `https://wa.me/?text=${currentReclamoData.whatsappMessage}`;
             window.open(whatsappUrl, '_blank');
-            
-            // Cerrar modal
             document.getElementById('share-modal').classList.remove('active');
         });
         
-        // Opción 2: Mensaje al Vecino
         document.getElementById('share-vecino').addEventListener('click', () => {
             if (!currentReclamoData) return;
-            
-            // Verificar si ya tiene número de reclamo
             if (currentReclamoData.numeroReclamo && currentReclamoData.numeroReclamo.trim() !== '') {
-                // Ya tiene número, enviar directo
                 enviarMensajeVecino(currentReclamoData.numeroReclamo);
             } else {
-                // No tiene número, mostrar input
                 document.getElementById('share-numero-container').classList.add('active');
             }
         });
         
-        // Cancelar ingreso de número
         document.getElementById('share-numero-cancel').addEventListener('click', () => {
             document.getElementById('share-numero-container').classList.remove('active');
             document.getElementById('share-numero-input').value = '';
         });
         
-        // Guardar número y enviar
         document.getElementById('share-numero-save').addEventListener('click', async () => {
             const numeroReclamo = document.getElementById('share-numero-input').value.trim();
-            
             if (!numeroReclamo) {
                 alert('Por favor ingrese el número de reclamo');
                 return;
             }
-            
-            // Guardar en el Sheet
             const guardado = await guardarNumeroReclamo(currentReclamoData.id, numeroReclamo);
-            
             if (guardado) {
-                // Actualizar el dato local
                 currentReclamoData.numeroReclamo = numeroReclamo;
-                
-                // Enviar mensaje
                 enviarMensajeVecino(numeroReclamo);
             } else {
                 alert('Error al guardar el número de reclamo. Intente nuevamente.');
             }
         });
         
-        // Función para enviar mensaje al vecino
         function enviarMensajeVecino(numeroReclamo) {
             if (!currentReclamoData) return;
             
-            // Limpiar la dirección (quitar el ", San Isidro, Buenos Aires, Argentina" que agregamos)
             const direccionLimpia = currentReclamoData.direccion.replace(', San Isidro, Buenos Aires, Argentina', ', San Isidro');
             
-            // Generar mensaje para el vecino con número de reclamo
             const mensaje = `Hola! Tu reclamo sobre "${currentReclamoData.tema}" ha sido registrado.
 
 *Número de Reclamo:* ${numeroReclamo}
@@ -2012,69 +1953,45 @@ Podés hacer el seguimiento de tu reclamo con este número. ¡Gracias por tu par
 
 _La Libertad Avanza - San Isidro_`;
             
-            // Limpiar el número de teléfono (quitar espacios, guiones, etc)
             let telefono = currentReclamoData.telefono.replace(/\D/g, '');
             
-            // Si el número tiene 10 dígitos y empieza con 0, quitarle el 0 y agregar 54
             if (telefono.length === 10 && telefono.startsWith('0')) {
                 telefono = '54' + telefono.substring(1);
-            }
-            // Si tiene 10 dígitos y NO empieza con 0, agregar 54
-            else if (telefono.length === 10) {
+            } else if (telefono.length === 10) {
                 telefono = '54' + telefono;
             }
-            // Si ya tiene el código de país (54), dejarlo como está
-            else if (telefono.startsWith('54')) {
-                // Ya está bien
-            }
             
-            // Cerrar modal ANTES de abrir WhatsApp (evita problemas de zoom)
             document.getElementById('share-modal').classList.remove('active');
             
-            // Detectar si es mobile
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            // Pequeño delay para que el modal se cierre antes
             setTimeout(() => {
                 if (isMobile) {
-                    // En mobile, usar el protocolo de WhatsApp directamente
                     const whatsappUrl = `whatsapp://send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
                     window.location.href = whatsappUrl;
-                    
-                    // Fallback a web.whatsapp si la app no está instalada
                     setTimeout(() => {
                         const webUrl = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
                         window.open(webUrl, '_blank');
                     }, 1000);
                 } else {
-                    // En desktop, usar web.whatsapp
                     const whatsappUrl = `https://web.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(mensaje)}`;
                     window.open(whatsappUrl, '_blank');
                 }
                 
-                // Refrescar la página después de 2 segundos para cargar el número de reclamo actualizado
                 setTimeout(() => {
                     location.reload();
                 }, 2000);
             }, 100);
         }
         
-        // Función para guardar el número de reclamo en el Sheet
         async function guardarNumeroReclamo(id, numeroReclamo) {
             try {
-                const response = await fetch('https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec', {
+                await fetch('https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec', {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        id: id,
-                        numeroReclamo: numeroReclamo
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, numeroReclamo: numeroReclamo })
                 });
-                
-                // Como es no-cors, asumimos que funcionó
                 return true;
             } catch (error) {
                 console.error('Error al guardar número de reclamo:', error);
@@ -2082,51 +1999,33 @@ _La Libertad Avanza - San Isidro_`;
             }
         }
         
-        // ============================================
-        // ACTUALIZACIÓN DE ESTADO
-        // ============================================
-        
-        // Función que se llama cuando cambia el selector
         function cambiarEstado(id, nuevoEstado) {
-            // Actualizar color del selector inmediatamente
             const selector = document.getElementById(`estado-selector-${id}`);
             if (selector) {
                 const color = COLORS[nuevoEstado];
                 selector.style.backgroundColor = color;
             }
-            
-            // Actualizar en el servidor y marcadores
             actualizarEstado(id, nuevoEstado);
         }
         
-        // Función para actualizar el estado de un reclamo
         async function actualizarEstado(id, nuevoEstado) {
             try {
-                const response = await fetch('https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec', {
+                await fetch('https://script.google.com/macros/s/AKfycbzAW53ehSqPdkudN5mkyValqSId0xCn7H7NLnvMEpMbkoUeA-0uNBewnuAmruhARzwq/exec', {
                     method: 'POST',
                     mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        action: 'updateEstado',
-                        id: id,
-                        estado: nuevoEstado
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'updateEstado', id: id, estado: nuevoEstado })
                 });
                 
-                // Actualizar localmente
                 const reclamo = reclamosData.find(r => r.id === id);
                 if (reclamo) {
                     const estadoAnterior = reclamo.estado;
                     reclamo.estado = nuevoEstado;
                     
-                    // Actualizar contadores
                     stateCounts[estadoAnterior] = (stateCounts[estadoAnterior] || 1) - 1;
                     stateCounts[nuevoEstado] = (stateCounts[nuevoEstado] || 0) + 1;
                     updateCounters();
                     
-                    // Recrear marcadores con los nuevos colores
                     markers.forEach(item => {
                         if (item && item.marker && typeof item.marker.setMap === 'function') {
                             item.marker.setMap(null);
@@ -2137,17 +2036,13 @@ _La Libertad Avanza - San Isidro_`;
                     const locationGroups = {};
                     reclamosData.forEach(item => {
                         const key = getLocationKey(item.lat, item.lng);
-                        if (!locationGroups[key]) {
-                            locationGroups[key] = [];
-                        }
+                        if (!locationGroups[key]) locationGroups[key] = [];
                         locationGroups[key].push(item);
                     });
                     
                     Object.values(locationGroups).forEach(group => {
                         createMarkerForGroup(group);
                     });
-                    
-                    console.log(`✅ Estado actualizado: ${estadoAnterior} → ${nuevoEstado}`);
                 }
                 
                 return true;
@@ -2158,7 +2053,6 @@ _La Libertad Avanza - San Isidro_`;
         }
     </script>
     
-    <!-- Librerías para captura de mapa y generación de PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
