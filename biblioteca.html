@@ -399,14 +399,9 @@
                         <textarea class="form-textarea" id="f-descripcion" placeholder="Breve descripción del proyecto..."></textarea>
                     </div>
                     <div class="form-group full">
-                        <label class="form-label">Archivo PDF</label>
-                        <div class="upload-zone" id="upload-zone">
-                            <input type="file" id="f-pdf" accept="application/pdf">
-                            <div class="upload-icon">📄</div>
-                            <div class="upload-text">Arrastrá el PDF acá o hacé click para seleccionarlo</div>
-                            <div class="upload-sub">Solo archivos PDF · Máx. 20 MB</div>
-                            <div class="upload-filename" id="upload-filename"></div>
-                        </div>
+                        <label class="form-label">Link del PDF (Google Drive)</label>
+                        <input type="text" class="form-input" id="f-pdfurl" placeholder="https://drive.google.com/file/d/.../view">
+                        <div style="font-size:11px;color:var(--gray-400);margin-top:4px;">Subí el PDF a Google Drive, copiá el link y pegalo acá</div>
                     </div>
                 </div>
             </div>
@@ -478,10 +473,9 @@ const ESTADOS = {
 // ════════════════════════════════════════
 // ESTADO APP
 // ════════════════════════════════════════
-let proyectos   = [];
-let editingId   = null;
-let deleteId    = null;
-let pendingFile = null;
+let proyectos = [];
+let editingId = null;
+let deleteId  = null;
 
 // ════════════════════════════════════════
 // INIT
@@ -524,36 +518,21 @@ async function loadProyectos() {
 }
 
 async function apiCall(params) {
-    const { pdfBase64, ...rest } = params;
-
-    if (pdfBase64) {
-        // PDF va por POST (evita limite de URL)
-        const res = await fetch(SHEET_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(params)
-        });
-        return await res.json();
-    } else {
-        // Sin PDF: GET normal con params
-        const url = new URL(SHEET_URL);
-        Object.entries(rest).forEach(([k, v]) => {
-            if (v !== null && v !== undefined && v !== '') {
-                url.searchParams.set(k, v);
-            }
-        });
-        const res  = await fetch(url.toString());
-        return await res.json();
-    }
+    const url = new URL(SHEET_URL);
+    Object.entries(params).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== '') {
+            url.searchParams.set(k, String(v));
+        }
+    });
+    const res  = await fetch(url.toString());
+    return await res.json();
 }
 
-function fileToBase64(file) {
-    return new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload  = () => res(reader.result.split(',')[1]);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-    });
+function convertDriveUrl(url) {
+    // Convierte cualquier link de Drive a URL de preview embebible
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) return 'https://drive.google.com/file/d/' + match[1] + '/preview';
+    return url;
 }
 
 // ════════════════════════════════════════
@@ -729,7 +708,7 @@ async function doDelete() {
 function editProyecto(id) {
     const p = proyectos.find(x => String(x.id) === String(id));
     if (!p) return;
-    editingId = id; pendingFile = null;
+    editingId = id;
 
     document.getElementById('form-modal-title').textContent  = 'Editar Proyecto';
     document.getElementById('f-titulo').value      = p.titulo      || '';
@@ -739,16 +718,7 @@ function editProyecto(id) {
     document.getElementById('f-expediente').value  = p.expediente  || '';
     document.getElementById('f-descripcion').value = p.descripcion || '';
 
-    const zone  = document.getElementById('upload-zone');
-    const fname = document.getElementById('upload-filename');
-    if (p.pdfUrl) {
-        zone.classList.add('has-file');
-        fname.style.display = 'block';
-        fname.textContent   = '✅ PDF existente (subí uno nuevo para reemplazarlo)';
-    } else {
-        zone.classList.remove('has-file');
-        fname.style.display = 'none';
-    }
+    document.getElementById('f-pdfurl').value = p.pdfUrl ? p.pdfUrl.replace('/preview', '/view') : '';
     document.getElementById('form-modal').classList.add('active');
 }
 
@@ -761,16 +731,11 @@ async function saveForm() {
     showLoading(editingId ? 'Guardando cambios...' : 'Creando proyecto...');
 
     try {
-        let pdfBase64 = null;
-        let pdfName   = null;
-
-        if (pendingFile) {
-            showLoading('Subiendo PDF...');
-            pdfBase64 = await fileToBase64(pendingFile);
-            pdfName   = pendingFile.name;
-        }
-
         const existing = editingId ? proyectos.find(x => String(x.id) === String(editingId)) : null;
+
+        // Convertir link de Drive a URL de preview embebible
+        const rawPdfUrl = document.getElementById('f-pdfurl').value.trim();
+        const pdfUrl    = rawPdfUrl ? convertDriveUrl(rawPdfUrl) : (existing?.pdfUrl || '');
 
         const body = {
             action:      editingId ? 'update' : 'add',
@@ -781,10 +746,8 @@ async function saveForm() {
             fecha:       document.getElementById('f-fecha').value,
             expediente:  encodeURIComponent(document.getElementById('f-expediente').value.trim()),
             descripcion: encodeURIComponent(document.getElementById('f-descripcion').value.trim()),
-            pdfBase64,
-            pdfNewName:  pendingFile ? encodeURIComponent(pendingFile.name) : undefined,
-            pdfUrl:      existing?.pdfUrl  || '',
-            pdfName:     existing?.pdfName || ''
+            pdfUrl:      encodeURIComponent(pdfUrl),
+            pdfName:     ''
         };
 
         await apiCall(body);
@@ -803,15 +766,12 @@ async function saveForm() {
 
 function closeFormModal() {
     document.getElementById('form-modal').classList.remove('active');
-    ['f-titulo','f-expediente','f-descripcion'].forEach(id => document.getElementById(id).value = '');
+    ['f-titulo','f-expediente','f-descripcion','f-pdfurl'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-estado').value   = 'Presentado';
     document.getElementById('f-comision').value = '';
     document.getElementById('f-fecha').value    = '';
-    document.getElementById('f-pdf').value      = '';
-    document.getElementById('upload-zone').classList.remove('has-file');
-    document.getElementById('upload-filename').style.display = 'none';
     document.getElementById('form-modal-title').textContent  = 'Nuevo Proyecto';
-    editingId = null; pendingFile = null;
+    editingId = null;
 }
 
 // ════════════════════════════════════════
@@ -879,24 +839,7 @@ function bindEvents() {
     document.getElementById('filter-estado').addEventListener('change', renderList);
     document.getElementById('filter-comision').addEventListener('change', renderList);
 
-    const fileInput = document.getElementById('f-pdf');
-    const zone      = document.getElementById('upload-zone');
-    const fname     = document.getElementById('upload-filename');
 
-    const handleFile = file => {
-        if (!file) return;
-        if (file.type !== 'application/pdf') { showToast('Solo se aceptan archivos PDF', 'error'); return; }
-        if (file.size > 20*1024*1024)        { showToast('El archivo no puede superar los 20 MB', 'error'); return; }
-        pendingFile = file;
-        zone.classList.add('has-file');
-        fname.style.display = 'block';
-        fname.textContent   = `✅ ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
-    };
-
-    fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
-    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
 }
 
 init();
