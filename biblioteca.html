@@ -453,7 +453,7 @@
 // ════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════
-const SHEET_URL = 'https://script.google.com/macros/s/AKfycbx-_LWMHLPYPvl1A-ilyOPmzh1jIMOKOKhPT0YQXlfHGIn-4Lc0bRuRHXv5zA5jiPd6/exec'; // <- reemplazar después del deploy
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbx-_LWMHLPYPvl1A-ilyOPmzh1jIMOKOKhPT0YQXlfHGIn-4Lc0bRuRHXv5zA5jiPd6/exec';
 
 const COMISIONES = [
     'Labor Parlamentaria',
@@ -523,14 +523,16 @@ async function loadProyectos() {
     }
 }
 
-async function apiPost(body) {
-    await fetch(SHEET_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(body)
+async function apiGet(params) {
+    const url = new URL(SHEET_URL);
+    Object.entries(params).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== '') {
+            url.searchParams.set(k, v);
+        }
     });
-    return true;
+    const res  = await fetch(url.toString());
+    const data = await res.json();
+    return data;
 }
 
 function fileToBase64(file) {
@@ -667,7 +669,7 @@ async function cambiarEstado(id, nuevoEstado) {
     if (p) p.estado = nuevoEstado;
     renderAll();
     try {
-        await apiPost({ action: 'updateEstado', id, estado: nuevoEstado });
+        await apiGet({ action: 'updateEstado', id, estado: nuevoEstado });
     } catch (err) {
         showToast('Error al guardar el estado', 'error');
     }
@@ -700,7 +702,7 @@ async function doDelete() {
     document.getElementById('confirm-modal').classList.remove('active');
     showLoading('Eliminando proyecto...');
     try {
-        await apiPost({ action: 'delete', id: deleteId });
+        await apiGet({ action: 'delete', id: deleteId });
         proyectos = proyectos.filter(x => String(x.id) !== String(deleteId));
         deleteId = null;
         renderAll();
@@ -761,19 +763,19 @@ async function saveForm() {
         const body = {
             action:      editingId ? 'update' : 'add',
             id:          editingId || undefined,
-            titulo,
+            titulo:      encodeURIComponent(titulo),
             estado:      document.getElementById('f-estado').value,
-            comision:    document.getElementById('f-comision').value,
+            comision:    encodeURIComponent(document.getElementById('f-comision').value),
             fecha:       document.getElementById('f-fecha').value,
-            expediente:  document.getElementById('f-expediente').value.trim(),
-            descripcion: document.getElementById('f-descripcion').value.trim(),
+            expediente:  encodeURIComponent(document.getElementById('f-expediente').value.trim()),
+            descripcion: encodeURIComponent(document.getElementById('f-descripcion').value.trim()),
             pdfBase64,
-            pdfName,
+            pdfNewName:  pendingFile ? encodeURIComponent(pendingFile.name) : undefined,
             pdfUrl:      existing?.pdfUrl  || '',
-            pdfNameExisting: existing?.pdfName || ''
+            pdfName:     existing?.pdfName || ''
         };
 
-        await apiPost(body);
+        await apiGet(body);
         closeFormModal();
         showToast(editingId ? 'Proyecto actualizado ✓' : 'Proyecto creado ✓', 'success');
         await loadProyectos(); // recargar para tener la pdfUrl real del Drive
