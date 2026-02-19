@@ -868,13 +868,13 @@ function formatFecha(val) {
     if (!val || val === '—') return '—';
     const s = String(val).trim();
     if (!s) return '—';
-    // ISO: 2026-02-18
-    const iso = s.substring(0, 10);
-    const parts = iso.split('-');
-    if (parts.length === 3 && parts[0].length === 4) {
-        const [y, m, d] = parts;
-        const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-        return `${+d} ${meses[+m-1]} ${y}`;
+    // Intentar parsear con Date (maneja ISO, GMT strings, etc)
+    const dt = new Date(s);
+    if (!isNaN(dt)) {
+        const d = dt.getDate();
+        const m = dt.getMonth() + 1;
+        const y = dt.getFullYear();
+        return `${d}/${m}/${y}`;
     }
     return s;
 }
