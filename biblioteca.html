@@ -106,12 +106,46 @@
         .main { max-width: 1100px; margin: 0 auto; padding: 24px; }
 
         /* ─── STATS ─── */
-        .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .stats-row {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            margin-bottom: 24px;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
 
-        .stat-card { background: white; border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 4px; }
-        .stat-label { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-value { font-size: 28px; font-weight: 800; color: var(--purple); line-height: 1; }
-        .stat-sub   { font-size: 11px; font-weight: 500; color: var(--gray-400); }
+        .stat-card {
+            flex: 1;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            border-right: 1px solid var(--gray-200);
+            border-top: 3px solid transparent;
+            transition: background 0.15s;
+        }
+        .stat-card:last-child { border-right: none; }
+        .stat-card:hover { background: var(--gray-50); }
+
+        .stat-card.total  { border-top-color: var(--purple); }
+        .stat-card.s-Presentado { border-top-color: #0369a1; }
+        .stat-card.s-EnRevision { border-top-color: #eab308; }
+        .stat-card.s-EnComision { border-top-color: #7c3aed; }
+        .stat-card.s-Aprobado   { border-top-color: #22c55e; }
+        .stat-card.s-Rechazado  { border-top-color: #ef4444; }
+        .stat-card.s-Archivado  { border-top-color: #9ca3af; }
+
+        .stat-label { font-size: 10px; font-weight: 700; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+        .stat-value { font-size: 22px; font-weight: 800; color: var(--purple); line-height: 1; }
+        .stat-sub   { font-size: 10px; font-weight: 500; color: var(--gray-400); }
+
+        @media (max-width: 700px) {
+            .stats-row { flex-wrap: wrap; }
+            .stat-card { flex: 1 1 calc(33% - 1px); border-right: 1px solid var(--gray-200); border-bottom: 1px solid var(--gray-200); }
+        }
 
         /* ─── LISTA ─── */
         .projects-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -576,15 +610,15 @@ function renderStats() {
     proyectos.forEach(p => { counts[p.estado] = (counts[p.estado] || 0) + 1; });
 
     document.getElementById('stats-row').innerHTML = `
-        <div class="stat-card">
+        <div class="stat-card total">
             <div class="stat-label">Total</div>
             <div class="stat-value">${proyectos.length}</div>
             <div class="stat-sub">proyectos</div>
         </div>
         ${Object.entries(ESTADOS).map(([k,v]) => `
-            <div class="stat-card">
+            <div class="stat-card s-${k}">
                 <div class="stat-label">${v.label}</div>
-                <div class="stat-value" style="font-size:22px">${counts[k]||0}</div>
+                <div class="stat-value">${counts[k]||0}</div>
             </div>
         `).join('')}
     `;
