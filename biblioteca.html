@@ -138,7 +138,8 @@
         .project-top    { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
         .project-title  { font-size: 15px; font-weight: 700; color: var(--gray-800); }
 
-        .project-meta   { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--gray-400); font-weight: 500; margin-bottom: 10px; }
+        .project-meta   { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--gray-400); font-weight: 500; margin-bottom: 4px; }
+        .project-meta:last-of-type { margin-bottom: 10px; }
         .meta-item      { display: flex; align-items: center; gap: 4px; }
         .meta-item svg  { width: 13px; height: 13px; fill: var(--gray-400); }
 
@@ -635,15 +636,17 @@ function renderList() {
                     <div class="project-top">
                         <div class="project-title">${escHtml(p.titulo)}</div>
                     </div>
-                    <div class="project-meta">
-                        <span class="meta-item" title="Fecha de presentación">
+                    <div class="project-meta project-meta-row">
+                        ${fecha !== '—' ? `<span class="meta-item" title="Fecha de presentación">
                             <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
                             Presentado: ${fecha}
-                        </span>
+                        </span>` : ''}
                         ${p.fechaCreacion ? `<span class="meta-item" title="Fecha de creación">
                             <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/></svg>
                             Creado: ${formatFecha(p.fechaCreacion)}
                         </span>` : ''}
+                    </div>
+                    <div class="project-meta project-meta-row">
                         ${p.comision ? `<span class="meta-item">
                             <svg viewBox="0 0 24 24"><path d="M12 3L1 9l11 6 9-4.91V17h2V9M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/></svg>
                             ${escHtml(p.comision)}
