@@ -600,6 +600,9 @@ function renderList() {
     const list = document.getElementById('projects-list');
     document.getElementById('count-badge').textContent = filtered.length;
 
+    console.log('proyectos:', proyectos);
+    console.log('filtered:', filtered);
+
     if (filtered.length === 0) {
         list.innerHTML = `
             <div class="empty-state">
