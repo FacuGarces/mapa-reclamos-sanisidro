@@ -937,17 +937,15 @@ function bindEvents() {
 // TOGGLE FECHA PRESENTACIÓN
 // ════════════════════════════════════════
 function toggleFecha(estado) {
-    const noPresenta = ['EnRevision', 'Archivado'];
+    const noPresenta = ['EnRevision', 'Archivado', ''];
     const fechaGroup = document.getElementById('fecha-group');
     const expGroup   = document.getElementById('expediente-group');
     if (noPresenta.includes(estado)) {
         fechaGroup.style.display = 'none';
         document.getElementById('f-fecha').value = '';
-        // Expediente va al lado de fecha-creacion
         expGroup.classList.remove('full');
     } else {
         fechaGroup.style.display = '';
-        // Expediente vuelve a full width
         expGroup.classList.add('full');
     }
 }
