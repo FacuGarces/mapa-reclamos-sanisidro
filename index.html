@@ -358,19 +358,29 @@ function logout() {
     document.getElementById('login-error').style.display = 'none';
 }
 
-// ── Init ──────────────────────────────────────────────
-window.onload = function() {
-    // Chequear si ya hay sesión activa
+// ── Chequeo de sesión (corre siempre, incluso desde caché) ───
+function checkSession() {
     const saved = sessionStorage.getItem('lla_user');
     if (saved) {
         try {
             const user = JSON.parse(saved);
             if (EMAILS_AUTORIZADOS.includes(user.email)) {
                 mostrarApp(user);
-                return;
+                return true;
             }
         } catch(e) {}
     }
+    return false;
+}
+
+// pageshow cubre tanto carga normal como restauración desde bfcache (botón atrás)
+window.addEventListener('pageshow', function(e) {
+    if (checkSession()) return;
+});
+
+// window.onload para inicializar el SDK de Google
+window.onload = function() {
+    if (checkSession()) return;
 
     // Inicializar Google Sign-In
     google.accounts.id.initialize({
