@@ -392,6 +392,15 @@
 </head>
 <body>
 
+    <!-- ── AUTH GUARD ── -->
+    <script>
+    (function() {
+        var saved = sessionStorage.getItem('lla_user');
+        if (!saved) { window.location.replace('index.html'); return; }
+        try { JSON.parse(saved); } catch(e) { window.location.replace('index.html'); }
+    })();
+    </script>
+
     <!-- LOADING -->
     <div class="loading-overlay" id="loading-overlay">
         <div class="loading-box">
@@ -413,6 +422,11 @@
                 <h1>📚 Biblioteca de Proyectos</h1>
                 <p>Seguimiento de proyectos legislativos</p>
             </div>
+        </div>
+        <!-- Avatar de usuario -->
+        <div id="header-user" style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+            <span id="header-user-name" style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);"></span>
+            <div id="header-avatar-wrap"></div>
         </div>
     </div>
 
@@ -641,9 +655,27 @@ let activeTab    = 'pdf';   // ← tab activo en el form
 // INIT
 // ════════════════════════════════════════
 async function init() {
+    loadUserSession();
     poblarSelectsComisiones();
     bindEvents();
     await loadProyectos();
+}
+
+function loadUserSession() {
+    try {
+        const user = JSON.parse(sessionStorage.getItem('lla_user') || '{}');
+        if (!user.name) return;
+
+        document.getElementById('header-user-name').textContent = user.given_name || user.name;
+
+        const wrap = document.getElementById('header-avatar-wrap');
+        if (user.picture) {
+            wrap.innerHTML = `<img src="${user.picture}" style="width:34px;height:34px;border-radius:50%;border:2px solid rgba(167,139,250,0.6);object-fit:cover;cursor:pointer;" title="${user.name}" referrerpolicy="no-referrer" onclick="window.location='index.html'">`;
+        } else {
+            const inicial = (user.name || 'U')[0].toUpperCase();
+            wrap.innerHTML = `<div style="width:34px;height:34px;border-radius:50%;background:rgba(167,139,250,0.3);border:2px solid rgba(167,139,250,0.6);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;cursor:pointer;" title="${user.name}" onclick="window.location='index.html'">${inicial}</div>`;
+        }
+    } catch(e) {}
 }
 
 function poblarSelectsComisiones() {
