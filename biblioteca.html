@@ -43,10 +43,10 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
             position: sticky;
             top: 0;
             z-index: 100;
+            margin-bottom: -1px;
         }
 
         .header-left { display: flex; align-items: center; gap: 14px; }
@@ -165,8 +165,6 @@
             overflow: hidden; border-left: 4px solid var(--gray-200); transition: all 0.2s;
         }
         .project-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.12); transform: translateY(-1px); }
-        .project-card.has-pdf { cursor: pointer; }
-        .project-card.has-pdf:hover { box-shadow: 0 6px 24px rgba(48,17,94,0.2); transform: translateY(-2px); }
 
         .project-card-inner { padding: 16px 18px; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
 
@@ -275,34 +273,6 @@
         .form-textarea { resize: vertical; min-height: 80px; }
 
         /* ─── UPLOAD TABS ─── */
-        .upload-tab-bar {
-            display: flex; gap: 0; margin-bottom: 10px;
-            border-radius: 8px; overflow: hidden;
-            border: 2px solid var(--gray-200);
-        }
-        .upload-tab {
-            flex: 1; padding: 9px 12px; border: none;
-            background: var(--gray-50); font-family: 'Montserrat', sans-serif;
-            font-size: 12px; font-weight: 600; cursor: pointer;
-            color: var(--gray-600); transition: all 0.2s;
-        }
-        .upload-tab.active { background: var(--purple); color: white; }
-        .upload-tab:hover:not(.active) { background: var(--gray-100); }
-
-        /* ─── UPLOAD PDF ─── */
-        .upload-zone {
-            border: 2px dashed var(--gray-200); border-radius: 8px; padding: 28px;
-            text-align: center; cursor: pointer; transition: all 0.2s; background: var(--gray-50); position: relative;
-        }
-        .upload-zone:hover, .upload-zone.drag-over { border-color: var(--purple); background: var(--purple-faint); }
-        .upload-zone.has-file { border-color: var(--green); background: #f0fdf4; }
-        .project-card.has-doc-only { cursor: pointer; }
-        .project-card.has-doc-only:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(48,17,94,0.12); }
-        .upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-        .upload-icon { font-size: 32px; margin-bottom: 10px; }
-        .upload-text { font-size: 14px; font-weight: 600; color: var(--gray-600); margin-bottom: 4px; }
-        .upload-sub  { font-size: 12px; color: var(--gray-400); }
-        .upload-filename { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 8px; display: none; }
 
         /* ─── GOOGLE DOCS ZONE ─── */
         .doc-create-zone {
@@ -350,9 +320,7 @@
         .btn-save:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         /* ─── PREVIEW ─── */
-        .preview-modal .modal { max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column; }
-        .preview-modal .modal-body { flex: 1; padding: 0; overflow: hidden; }
-        .pdf-frame { width: 100%; height: 75vh; border: none; display: block; }
+
 
         .form-modal .modal { max-width: 580px; }
         .form-modal .modal-body { max-height: calc(90vh - 130px); overflow-y: auto; }
@@ -516,38 +484,10 @@
                         <textarea class="form-textarea" id="f-descripcion" placeholder="Breve descripción del proyecto..."></textarea>
                     </div>
 
-                    <!-- ARCHIVO: tabs PDF / Google Docs -->
+                    <!-- ARCHIVO: Google Docs -->
                     <div class="form-group full">
                         <label class="form-label">Archivo *</label>
-
-                        <!-- Tab bar -->
-                        <div class="upload-tab-bar">
-                            <button type="button" class="upload-tab active" id="tab-pdf" onclick="switchUploadTab('pdf')">
-                                📄 Subir PDF
-                            </button>
-                            <button type="button" class="upload-tab" id="tab-doc" onclick="switchUploadTab('doc')">
-                                📝 Crear en Google Docs
-                            </button>
-                        </div>
-
-                        <!-- Sección PDF -->
-                        <div id="upload-pdf-section">
-                            <div class="upload-zone" id="upload-zone">
-                                <input type="file" id="f-pdf" accept="application/pdf">
-                                <div class="upload-icon">📄</div>
-                                <div class="upload-text">Arrastrá el PDF acá o hacé click para seleccionarlo</div>
-                                <div class="upload-sub">Solo archivos PDF · Máx. 20 MB</div>
-                                <div class="upload-filename" id="upload-filename"></div>
-                            </div>
-                            <div id="pdf-disclaimer" style="display:none;margin-top:8px;padding:10px 12px;
-                                background:#fffbeb;border:1px solid #fde68a;border-radius:8px;
-                                font-size:12px;color:#92400e;line-height:1.5;">
-                                ⚠️ <strong>Verificá que sea la versión final del documento</strong> antes de subirlo. Una vez guardado va a ser la versión visible para todo el equipo.
-                            </div>
-                        </div>
-
-                        <!-- Sección Google Docs -->
-                        <div id="upload-doc-section" style="display:none">
+                        <div id="upload-doc-section">
                             <div class="doc-create-zone" id="doc-create-zone">
                                 <div class="upload-icon" id="doc-upload-icon">📝</div>
                                 <div class="upload-text" id="doc-upload-text">Redactá el proyecto en Google Docs</div>
@@ -615,18 +555,7 @@
         </div>
     </div>
 
-    <!-- MODAL: PREVIEW PDF -->
-    <div class="modal-overlay preview-modal" id="preview-modal">
-        <div class="modal" style="max-width:860px;">
-            <div class="modal-header">
-                <span class="modal-title" id="preview-modal-title">Vista previa</span>
-                <button class="modal-close" id="preview-modal-close">×</button>
-            </div>
-            <div class="modal-body">
-                <iframe class="pdf-frame" id="pdf-frame" src=""></iframe>
-            </div>
-        </div>
-    </div>
+
 
     <!-- MODAL: CONFIRMAR ELIMINACIÓN -->
     <div class="modal-overlay" id="confirm-modal">
@@ -679,9 +608,7 @@ const ESTADOS = {
 let proyectos    = [];
 let editingId    = null;
 let deleteId     = null;
-let pendingFile  = null;
 let pendingDocUrl = null;   // ← nuevo: URL del Google Doc pendiente
-let activeTab    = 'pdf';   // ← tab activo en el form
 
 // ════════════════════════════════════════
 // INIT
@@ -761,27 +688,9 @@ async function apiPost(params) {
     });
 }
 
-function fileToBase64(file) {
-    return new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload  = () => res(reader.result.split(',')[1]);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-    });
-}
-
 // ════════════════════════════════════════
 // TABS UPLOAD
 // ════════════════════════════════════════
-function switchUploadTab(tab) {
-    activeTab = tab;
-    document.getElementById('tab-pdf').classList.toggle('active', tab === 'pdf');
-    document.getElementById('tab-doc').classList.toggle('active', tab === 'doc');
-    document.getElementById('upload-pdf-section').style.display = tab === 'pdf' ? '' : 'none';
-    document.getElementById('upload-doc-section').style.display = tab === 'doc' ? '' : 'none';
-    // Solo cambia la vista, no limpia datos cargados
-}
-
 // ════════════════════════════════════════
 // CREAR GOOGLE DOC
 // ════════════════════════════════════════
@@ -940,14 +849,13 @@ function renderList() {
     list.innerHTML = filtered.map(p => {
         const est      = ESTADOS[p.estado] || ESTADOS['Presentado'];
         const fecha    = p.fecha ? formatFecha(p.fecha) : '—';
-        const tienePDF = !!p.pdfUrl;
         const tieneDoc = !!p.docUrl;
         const estadoOpts = Object.entries(ESTADOS).map(([k,v]) =>
             `<option value="${k}" ${p.estado===k?'selected':''}>${v.label}</option>`
         ).join('');
 
         return `
-        <div class="project-card ${est.border}${tienePDF ? ' has-pdf' : ''}${!tienePDF && tieneDoc ? ' has-doc-only' : ''}" ${tienePDF ? `onclick="previewPDF('${p.id}')"` : (!tienePDF && tieneDoc ? `onclick="window.open('${escHtml(p.docUrl)}', '_blank')"` : '')}>
+        <div class="project-card ${est.border}${tieneDoc ? ' has-doc-only' : ''}" ${tieneDoc ? `onclick="window.open('${escHtml(p.docUrl)}', '_blank')"` : ''}>
             <div class="project-card-inner">
                 <div class="project-main">
                     <div class="project-top">
@@ -972,10 +880,7 @@ function renderList() {
                             <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                             ${escHtml(p.expediente)}
                         </span>` : ''}
-                        ${tienePDF ? `<span class="meta-item" style="color:#22c55e">
-                            <svg viewBox="0 0 24 24" style="fill:#22c55e"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM14 13h1V8.5h-1V13z"/></svg>
-                            PDF adjunto
-                        </span>` : ''}
+                        
                         ${tieneDoc ? `<span class="meta-item" style="color:#1a73e8">
                             <svg viewBox="0 0 24 24" style="fill:#1a73e8"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                             Google Doc
@@ -988,18 +893,7 @@ function renderList() {
                         ${estadoOpts}
                     </select>
                     <div class="action-btns" onclick="event.stopPropagation()">
-                        ${tienePDF ? `
-                        <button class="icon-btn icon-btn-preview" title="Ver PDF" onclick="previewPDF('${p.id}')">
-                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                        </button>
-                        <button class="icon-btn icon-btn-download" title="Descargar PDF" onclick="downloadPDF('${p.id}')">
-                            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-                        </button>
-                        ` : (tieneDoc ? `
-                        <button class="icon-btn icon-btn-preview" title="Ver documento" onclick="window.open('${escHtml(p.docUrl)}', '_blank')">
-                            <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                        </button>
-                        ` : '')}
+                        
                         ${tieneDoc ? `
                         <button class="icon-btn icon-btn-docs" title="Abrir en Google Docs" onclick="window.open('${escHtml(p.docUrl)}', '_blank')">
                             <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
@@ -1032,20 +926,6 @@ async function cambiarEstado(id, nuevoEstado) {
     }
 }
 
-function previewPDF(id) {
-    const p = proyectos.find(x => String(x.id) === String(id));
-    if (!p || !p.pdfUrl) return;
-    document.getElementById('pdf-frame').src = p.pdfUrl;
-    document.getElementById('preview-modal-title').textContent = p.titulo;
-    document.getElementById('preview-modal').classList.add('active');
-}
-
-function downloadPDF(id) {
-    const p = proyectos.find(x => String(x.id) === String(id));
-    if (!p || !p.pdfUrl) return;
-    window.open(p.pdfUrl.replace('/preview', '/view'), '_blank');
-}
-
 function promptDelete(id) {
     const p = proyectos.find(x => String(x.id) === String(id));
     if (!p) return;
@@ -1074,7 +954,7 @@ async function doDelete() {
 function editProyecto(id) {
     const p = proyectos.find(x => String(x.id) === String(id));
     if (!p) return;
-    editingId = id; pendingFile = null; pendingDocUrl = null;
+    editingId = id; pendingDocUrl = null;
 
     document.getElementById('form-modal-title').textContent  = 'Editar Proyecto';
     document.getElementById('f-titulo').value          = p.titulo        || '';
@@ -1087,25 +967,6 @@ function editProyecto(id) {
 
     // Si tiene docUrl guardado, pre-cargar para que no se pierda al guardar
     if (p.docUrl) pendingDocUrl = p.docUrl;
-
-    // Elegir qué tab mostrar según qué archivo tiene el proyecto
-    if (p.docUrl && !p.pdfUrl) {
-        switchUploadTab('doc');
-    } else {
-        switchUploadTab('pdf');
-    }
-
-    // Mostrar info del PDF existente
-    const zone  = document.getElementById('upload-zone');
-    const fname = document.getElementById('upload-filename');
-    if (p.pdfUrl) {
-        zone.classList.add('has-file');
-        fname.style.display = 'block';
-        fname.textContent   = '✅ PDF existente (subí uno nuevo para reemplazarlo)';
-    } else {
-        zone.classList.remove('has-file');
-        fname.style.display = 'none';
-    }
 
     // Mostrar info del Google Doc existente
     const docExistingSection = document.getElementById('doc-existing-section');
@@ -1143,9 +1004,9 @@ async function saveForm() {
 
     // Validar archivo: necesita PDF nuevo, docUrl nuevo, o (en edición) archivo ya existente
     const existing = editingId ? proyectos.find(x => String(x.id) === String(editingId)) : null;
-    const yaHayArchivo = existing && (existing.pdfUrl || existing.docUrl);
-    if (!editingId && !pendingFile && !pendingDocUrl) {
-        showToast('Adjuntá un PDF o creá un Google Doc', 'error'); return;
+    const yaHayArchivo = existing && existing.docUrl;
+    if (!editingId && !pendingDocUrl) {
+        showToast('Creá o vinculá un Google Doc', 'error'); return;
     }
 
     const saveBtn = document.getElementById('form-save');
@@ -1153,13 +1014,6 @@ async function saveForm() {
     showLoading(editingId ? 'Guardando cambios...' : 'Creando proyecto...');
 
     try {
-        let pdfBase64  = null;
-        let pdfNewName = null;
-        if (pendingFile) {
-            showLoading('Procesando PDF...');
-            pdfBase64  = await fileToBase64(pendingFile);
-            pdfNewName = pendingFile.name;
-        }
 
         const body = {
             action:         editingId ? 'update' : 'add',
@@ -1171,10 +1025,6 @@ async function saveForm() {
             fechaCreacion:  editingId ? (existing?.fechaCreacion || '') : new Date().toISOString().slice(0,10),
             expediente:     document.getElementById('f-expediente').value.trim(),
             descripcion:    document.getElementById('f-descripcion').value.trim(),
-            pdfBase64,
-            pdfNewName,
-            pdfUrl:         existing?.pdfUrl  || '',
-            pdfName:        existing?.pdfName || '',
             // Google Doc URL: si se creó uno nuevo en esta sesión, usarlo; si no, preservar el existente
             docUrl:         pendingDocUrl || (existing?.docUrl || '')
         };
@@ -1201,8 +1051,6 @@ function closeFormModal() {
     document.getElementById('f-estado').value   = 'Presentado';
     document.getElementById('f-comision').value = '';
     document.getElementById('f-fecha').value    = '';
-    document.getElementById('f-pdf').value      = '';
-    document.getElementById('upload-zone').classList.remove('has-file');
     document.getElementById('upload-filename').style.display = 'none';
     document.getElementById('form-modal-title').textContent  = 'Nuevo Proyecto';
     // Reset Google Docs
@@ -1214,10 +1062,7 @@ function closeFormModal() {
     document.getElementById('doc-link-input').value = '';
     document.getElementById('doc-link-error').style.display = 'none';
     document.getElementById('doc-link-disclaimer').style.display = 'none';
-    document.getElementById('pdf-disclaimer').style.display = 'none';
-    switchUploadTab('pdf');
     editingId    = null;
-    pendingFile  = null;
     pendingDocUrl = null;
 }
 
@@ -1265,8 +1110,7 @@ function bindEvents() {
         document.getElementById('f-estado').value = '';
         document.getElementById('f-fecha').value = '';
         document.getElementById('f-fecha-creacion').value = new Date().toISOString().slice(0,10);
-        switchUploadTab('pdf');
-        toggleFecha('');
+            toggleFecha('');
         document.getElementById('form-modal').classList.add('active');
     });
 
@@ -1275,16 +1119,7 @@ function bindEvents() {
     document.getElementById('form-modal').addEventListener('click', e => { if (e.target.id==='form-modal') closeFormModal(); });
     document.getElementById('form-save').addEventListener('click', saveForm);
 
-    document.getElementById('preview-modal-close').addEventListener('click', () => {
-        document.getElementById('preview-modal').classList.remove('active');
-        document.getElementById('pdf-frame').src = '';
-    });
-    document.getElementById('preview-modal').addEventListener('click', e => {
-        if (e.target.id==='preview-modal') {
-            document.getElementById('preview-modal').classList.remove('active');
-            document.getElementById('pdf-frame').src = '';
-        }
-    });
+
 
     document.getElementById('confirm-modal-close').addEventListener('click', () => { document.getElementById('confirm-modal').classList.remove('active'); deleteId=null; });
     document.getElementById('confirm-cancel').addEventListener('click',      () => { document.getElementById('confirm-modal').classList.remove('active'); deleteId=null; });
@@ -1295,23 +1130,6 @@ function bindEvents() {
     document.getElementById('filter-estado').addEventListener('change', renderList);
     document.getElementById('filter-comision').addEventListener('change', renderList);
 
-    const fileInput = document.getElementById('f-pdf');
-    const zone      = document.getElementById('upload-zone');
-    const fname     = document.getElementById('upload-filename');
-
-    const handleFile = file => {
-        if (!file) return;
-        if (file.type !== 'application/pdf') { showToast('Solo se aceptan archivos PDF', 'error'); return; }
-        if (file.size > 20 * 1024 * 1024)   { showToast('El archivo no puede superar los 20 MB', 'error'); return; }
-        pendingFile = file;
-        zone.classList.add('has-file');
-        document.getElementById('pdf-disclaimer').style.display = 'block';
-        fname.style.display = 'block';
-        fname.textContent   = `✅ ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)`;
-    };
-
-    fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
-    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
     zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
     zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
 }
