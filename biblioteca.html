@@ -549,9 +549,9 @@
                         <!-- Sección Google Docs -->
                         <div id="upload-doc-section" style="display:none">
                             <div class="doc-create-zone" id="doc-create-zone">
-                                <div class="upload-icon">📝</div>
-                                <div class="upload-text">Redactá el proyecto en Google Docs</div>
-                                <div class="upload-sub">
+                                <div class="upload-icon" id="doc-upload-icon">📝</div>
+                                <div class="upload-text" id="doc-upload-text">Redactá el proyecto en Google Docs</div>
+                                <div class="upload-sub" id="doc-upload-sub">
                                     Se crea un documento con el membrete del Bloque, la fecha de hoy y listo para editar
                                 </div>
                                 <button type="button" class="btn-create-doc" id="btn-create-doc" onclick="crearGoogleDoc()">
@@ -598,9 +598,8 @@
                                         Seguir editando →
                                     </a>
                                     <div style="margin-top:8px; font-size:11px; color:var(--gray-400);">
-                                        ¿Querés reemplazarlo?
                                         <button type="button" onclick="mostrarFormCrearDoc()" style="background:none;border:none;color:var(--gdoc-blue);font-size:11px;font-weight:600;cursor:pointer;font-family:'Montserrat',sans-serif;padding:0;">
-                                            Crear uno nuevo
+                                            Reemplazar documento
                                         </button>
                                     </div>
                                 </div>
@@ -823,6 +822,10 @@ function mostrarFormCrearDoc() {
     document.getElementById('doc-url-preview').style.display = 'none';
     document.getElementById('doc-create-zone').classList.remove('has-doc');
     document.getElementById('btn-create-doc').style.display = '';
+    document.getElementById('doc-upload-icon').style.display = '';
+    document.getElementById('doc-upload-text').style.display = '';
+    document.getElementById('doc-upload-sub').style.display = '';
+    document.getElementById('doc-link-section').style.display = '';
     document.getElementById('doc-link-input').value = '';
     document.getElementById('doc-link-error').style.display = 'none';
     document.getElementById('doc-link-disclaimer').style.display = 'none';
@@ -1111,8 +1114,12 @@ function editProyecto(id) {
         // Mostrar botón "Seguir editando" con la URL guardada
         document.getElementById('btn-seguir-editando').href = p.docUrl;
         docExistingSection.style.display = 'block';
-        // Ocultar el botón "Crear documento" y el preview de "recién creado"
+        // Ocultar ícono, descripción, botón crear y link input
         document.getElementById('btn-create-doc').style.display = 'none';
+        document.getElementById('doc-upload-icon').style.display = 'none';
+        document.getElementById('doc-upload-text').style.display = 'none';
+        document.getElementById('doc-upload-sub').style.display = 'none';
+        document.getElementById('doc-link-section').style.display = 'none';
         docUrlPreview.style.display = 'none';
         document.getElementById('doc-create-zone').classList.add('has-doc');
     } else {
